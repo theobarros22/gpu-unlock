@@ -70,7 +70,7 @@ def load_run_dir(path: Path) -> dict:
     marker = path / "complete.json"
     if not marker.exists():
         raise FileNotFoundError(f"Missing complete.json in {path}")
-    data = json.loads(marker.read_text(encoding="utf-8"))
+    data = json.loads(marker.read_text(encoding="utf-8-sig"))
     if not completed(data):
         raise ValueError(f"Run in {path} is not valid/completed/quality-approved")
     return data
@@ -88,7 +88,10 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path, restored_dir: Path = N
     cand_val = float(cand["metric_value"])
 
     time_red = time_reduction_pct(base_val, cand_val)
-    tput_gain = throughput_gain_pct(base_val, cand_val)
+    if any(k in metric_name.lower() for k in ("second", "time", "duration", "ms")):
+        tput_gain = throughput_gain_pct(1.0 / base_val, 1.0 / cand_val)
+    else:
+        tput_gain = throughput_gain_pct(base_val, cand_val)
 
     report = {
         "workload": base.get("context", {}).get("workload_name"),

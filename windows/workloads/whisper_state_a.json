@@ -1,0 +1,22 @@
+{
+  "workload_name": "faster_whisper_vollare",
+  "protocol_version": 2,
+  "executable": "C:\\Users\\theob\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "arguments": [
+    "C:\\Users\\theob\\Documents\\antigravity\\jolly-newton\\gpu-unlock\\windows\\workloads\\bench_whisper.py",
+    "--audio",
+    "C:\\Users\\theob\\Documents\\antigravity\\jolly-newton\\public\\media\\vollare-projects\\dano_pedagogico\\act_1_speed130.wav",
+    "--model-size",
+    "small",
+    "--device",
+    "cpu",
+    "--compute-type",
+    "int8",
+    "--warmup-runs",
+    "1",
+    "--measured-runs",
+    "3"
+  ],
+  "timeout_seconds": 180,
+  "expected_stdout_regex": "benchmark_protocol"
+}
