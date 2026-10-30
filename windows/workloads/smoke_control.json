@@ -1,0 +1,12 @@
+{
+  "workload_name": "smoke_control",
+  "protocol_version": 1,
+  "executable": "powershell.exe",
+  "arguments": [
+    "-NoProfile",
+    "-Command",
+    "Write-Output 'SMOKE_CONTROL_PASS'"
+  ],
+  "timeout_seconds": 30,
+  "expected_stdout_regex": "SMOKE_CONTROL_PASS"
+}

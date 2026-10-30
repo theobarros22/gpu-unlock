@@ -1,0 +1,8 @@
+{
+  "workload_name": "cuda_gemm_benchmark_3050",
+  "protocol_version": 2,
+  "executable": "windows/port/benchmark/bin/compute-benchmark-3050.exe",
+  "arguments": [],
+  "timeout_seconds": 180,
+  "expected_stdout_regex": "benchmark_protocol"
+}
