@@ -88,7 +88,7 @@ static BOOLEAN GuHeadlessCheckInner(VOID) {
     for(UINTN i=0;s==EFI_SUCCESS && i<n;i++) {
       EFI_DEVICE_PATH_PROTOCOL *dp=NULL;EFI_GRAPHICS_OUTPUT_PROTOCOL *g=NULL;
       EFI_STATUS ps=bs->HandleProtocol(handles[i],&path,(VOID **)&dp);
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
       /* Dell G15 hybrid laptop: host displays on Intel UHD (00:02.0).
        * Verify that this GOP handle does NOT belong to the target NVIDIA dGPU (Gu.handle). */
       (void)ps;(void)g;

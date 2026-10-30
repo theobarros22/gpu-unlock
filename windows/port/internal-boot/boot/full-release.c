@@ -16,7 +16,7 @@ static BOOLEAN OwnRecord(EFI_HANDLE Handle,const EFI_OPEN_PROTOCOL_INFORMATION_E
 #define GU_HEADLESS_MAX_DISPLAY_CHILDREN 4
 
 static EFI_GUID EdidGuid=EFI_EDID_DISCOVERED_PROTOCOL_GUID;
-#if GU_CONSOLE_CHILD_COUNT > 0
+#ifndef GU_HYBRID_DGPU_NO_CONSOLE
 static const EFI_GUID MouseFile={0xc7a7030c,0xc3d8,0x45ee,{0xbe,0xd9,0x5d,0x9e,0x76,0x76,0x29,0x53}};
 #endif
 typedef struct {
@@ -65,7 +65,7 @@ static EFI_STATUS ReadConfigFull(UINT32 *cfg) {
   s=io->GetLocation(io,&seg,&bus,&dev,&fun);
   if(s!=EFI_SUCCESS || seg!=GU_TARGET_SEGMENT || bus!=GU_TARGET_BUS || dev || fun)return EFI_UNSUPPORTED;
   s=io->Pci.Read(io,EfiPciIoWidthUint32,0,64,cfg);
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(s==EFI_SUCCESS && (cfg[0]!=GU_BOARD_ID || cfg[11]!=GU_BOARD_SUBSYSTEM || cfg[2]!=0x030000a1 || cfg[4]!=(UINT32)GU_BAR0_BASE || ((cfg[1]&6U)!=2U && (cfg[1]&6U)!=6U)))s=EFI_UNSUPPORTED;
 #else
   if(s==EFI_SUCCESS && (cfg[0]!=GU_BOARD_ID || cfg[11]!=GU_BOARD_SUBSYSTEM || cfg[2]!=0x030000a1 || cfg[4]!=(UINT32)GU_BAR0_BASE || (cfg[1]&4)))s=EFI_UNSUPPORTED;
@@ -156,7 +156,7 @@ EFI_STATUS GuPeekCold(EFI_SYSTEM_TABLE *t,UINT32 *values) {
   /* Require memory decode, no bus mastering and the exact 32-bit memory BAR
    * before asking for its descriptor, then recheck after allocation/free calls.
    * Firmware callbacks are not atomic; this guards service-return boundaries. */
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(((targetConfig[1]&6U)!=2U && (targetConfig[1]&6U)!=6U) || targetConfig[4]!=(UINT32)GU_BAR0_BASE)return EFI_UNSUPPORTED;
 #else
   if((targetConfig[1]&6U)!=2U || targetConfig[4]!=(UINT32)GU_BAR0_BASE)return EFI_UNSUPPORTED;
@@ -176,7 +176,7 @@ static EFI_STATUS Prom(VOID) {
   if(!io || io!=PreparedPlan.RtxIo || !io->Mem.Read)s=EFI_UNSUPPORTED;
   UINT32 cfg[64];
   if(s==EFI_SUCCESS)s=ReadConfigFull(cfg);
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(s==EFI_SUCCESS && (io!=PreparedPlan.RtxIo || ((cfg[1]&6U)!=2U && (cfg[1]&6U)!=6U) || !Bytes(cfg,Full.Config,sizeof(cfg))))s=EFI_NOT_READY;
 #else
   if(s==EFI_SUCCESS && (io!=PreparedPlan.RtxIo || (cfg[1]&6U)!=2U || !Bytes(cfg,Full.Config,sizeof(cfg))))s=EFI_NOT_READY;
@@ -187,7 +187,7 @@ static EFI_STATUS Prom(VOID) {
   if(s==EFI_SUCCESS)s=freed;
   return s;
 }
-#if GU_CONSOLE_CHILD_COUNT > 0
+#ifndef GU_HYBRID_DGPU_NO_CONSOLE
 static BOOLEAN CodeRange(UINTN base,UINT64 size,UINTN rva,UINTN bytes,UINTN stop) {
   return base && bytes && rva<=size && bytes<=size-rva &&
     stop>=rva && stop-rva<bytes && size<=~(UINTN)0-base;
@@ -334,7 +334,7 @@ static EFI_STATUS FullConsumers(const GRAPH *g) {
     }
     else return EFI_ACCESS_DENIED;
   }
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(owners==0 && children==0) {
     Full.ChildCount=0;
     return EFI_SUCCESS;
@@ -494,7 +494,7 @@ static EFI_STATUS AmdOnly(VOID) {
   EFI_HANDLE *handles=NULL;UINTN count=0;
   EFI_STATUS s=bs->LocateHandleBuffer(ByProtocol,&GopGuid,NULL,&count,&handles);
   if(s==EFI_NOT_FOUND && !count && !handles)return EFI_SUCCESS;
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(handles)bs->FreePool(handles);
   return EFI_SUCCESS;
 #elif GU_CONSOLE_AGGREGATE
@@ -564,7 +564,7 @@ static EFI_STATUS CapturePermit(VOID) {
   EFI_PCI_IO_PROTOCOL *io=PreparedPlan.RtxIo;
   if(s==EFI_SUCCESS && !io->Attributes)s=EFI_UNSUPPORTED;
   if(s==EFI_SUCCESS)s=io->Attributes(io,EfiPciIoAttributeOperationGet,0,&Full.Attributes);
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   UINT64 expected=(Full.Config[1]&1?EFI_PCI_IO_ATTRIBUTE_IO:0)|(Full.Config[1]&2?EFI_PCI_IO_ATTRIBUTE_MEMORY:0)|(Full.Config[1]&4?EFI_PCI_IO_ATTRIBUTE_BUS_MASTER:0);
   if(s==EFI_SUCCESS && Full.Attributes!=0 && (Full.Attributes&(EFI_PCI_IO_ATTRIBUTE_IO|EFI_PCI_IO_ATTRIBUTE_MEMORY|EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))!=expected)s=EFI_NOT_READY;
 #else
@@ -648,14 +648,14 @@ EFI_STATUS GuReleaseGop(EFI_SYSTEM_TABLE *t,EFI_HANDLE image,GU_PREPARE_LOG log,
 #else
   if(s==EFI_SUCCESS)s=Note("ami-runtime-code-profile",Profile(Full.EdidAgent,TRUE));
 #endif
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(s==EFI_SUCCESS)s=Note("unattached-dgpu-no-gop-driver",EFI_SUCCESS);
 #else
   if(s==EFI_SUCCESS)s=Note("nvidia-code-profile",Profile(Full.NvAgent,FALSE));
 #endif
   if(s==EFI_SUCCESS)s=CapturePermit();
   s=Note("full-release-preflight",s);if(s!=EFI_SUCCESS)return s;
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
   Full.Released=TRUE;
 #else
   /* Stage 3 stops the EDID driver on each display child; without one only stage 4 remains. */

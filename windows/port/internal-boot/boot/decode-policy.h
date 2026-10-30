@@ -6,7 +6,7 @@
 static inline BOOLEAN GuDecodeRestoreMask(const UINT32 *before,const UINT32 *after,UINT64 *mask) {
   if(!before || !after || !mask)return FALSE;
   *mask=0;
-  #if GU_CONSOLE_CHILD_COUNT == 0
+  #ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(before[0]!=GU_BOARD_ID || before[11]!=GU_BOARD_SUBSYSTEM || !(before[1]&2))return FALSE;
 #else
   if(before[0]!=GU_BOARD_ID || before[11]!=GU_BOARD_SUBSYSTEM || !(before[1]&2) || (before[1]&4) || (after[1]&4))return FALSE;

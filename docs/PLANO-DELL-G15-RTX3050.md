@@ -239,15 +239,15 @@ assert not completed({"exit_code": 1, "quality_pass": True})
 **Modificar no port conforme a rota comprovada:** `internal-boot/boot/prepare-console.c`, `full-release.c`, `full-flow.c`, `handoff.c`; `internal-boot/unlock/headless-policy.h`, `ownership.c`, `port.c`, `machine-profile.h`.
 **Criar se necessário:** `internal-boot/unlock/profile-dell-research.h` privado/ignorado, `research/profile/build-dell-research.ps1` e teste correspondente. São propostas novas, não scripts já disponíveis.
 
-- [x] Reutilizar a rota existente somente quando captura e replay corresponderem. Se Intel GOP puder ser preservado, testar que não se desconecta seu controlador nem seus openers. Se NVIDIA for a única saída, testar caminho headless e logs de arquivo.
-- [x] Acrescentar somente a política necessária à topologia constatada. Trocar IDs AMD por Intel não satisfaz ownership nem display independence.
-- [x] Exigir D0/estado inicial e FLR/cleanup conforme a transação. Não copiar parâmetro de gerenciamento D3 Linux para registro Windows.
-- [x] Para o primeiro ensaio, selecionar explicitamente a rota Dell de pesquisa por build; padrão permanece recusando GA107. `proven.json` e geração LOCAL comum continuam sem declarar suporte Dell.
-- [x] Vincular perfil de pesquisa a hashes exatos de fontes, captura, PROM, código GOP, assets e testes. Um JSON editável ou flag “force” não pode dispensar os guards.
-- [x] Reaproveitar verificadores existentes; garantir que a evidência do build de pesquisa cubra os jobs aplicáveis, mais os novos testes Dell. Não fabricar um `test-results.json` para satisfazer o pipeline LOCAL.
-- [x] Testar perfil ausente, dado alterado após teste, família errada, ownership alterado, BME já ativo, incoerência de atributos PCI, falta de FLR, timeout e perda de console.
-- [x] Rejeitar retry no mesmo boot após falha de contenção. Se DMA não estiver quiescente, não seguir o handoff normal.
-- [x] Revisar a rota Dell com uma segunda revisão técnica antes da escrita física. Pode ser revisão posterior separada; não é permissão para ampliar escopo ou delegar automaticamente.
+- [ ] Reutilizar a rota existente somente quando captura e replay corresponderem. Se Intel GOP puder ser preservado, testar que não se desconecta seu controlador nem seus openers. Se NVIDIA for a única saída, testar caminho headless e logs de arquivo.
+- [ ] Acrescentar somente a política necessária à topologia constatada. Trocar IDs AMD por Intel não satisfaz ownership nem display independence.
+- [ ] Exigir D0/estado inicial e FLR/cleanup conforme a transação. Não copiar parâmetro de gerenciamento D3 Linux para registro Windows.
+- [ ] Para o primeiro ensaio, selecionar explicitamente a rota Dell de pesquisa por build; padrão permanece recusando GA107. `proven.json` e geração LOCAL comum continuam sem declarar suporte Dell.
+- [ ] Vincular perfil de pesquisa a hashes exatos de fontes, captura, PROM, código GOP, assets e testes. Um JSON editável ou flag “force” não pode dispensar os guards.
+- [ ] Reaproveitar verificadores existentes; garantir que a evidência do build de pesquisa cubra os jobs aplicáveis, mais os novos testes Dell. Não fabricar um `test-results.json` para satisfazer o pipeline LOCAL.
+- [ ] Testar perfil ausente, dado alterado após teste, família errada, ownership alterado, BME já ativo, incoerência de atributos PCI, falta de FLR, timeout e perda de console.
+- [ ] Rejeitar retry no mesmo boot após falha de contenção. Se DMA não estiver quiescente, não seguir o handoff normal.
+- [ ] Revisar a rota Dell com uma segunda revisão técnica antes da escrita física. Pode ser revisão posterior separada; não é permissão para ampliar escopo ou delegar automaticamente.
 
 **Aceite:** nenhum caminho normal passa a admitir 25EC; o build experimental exige evidência local íntegra, e falhas conservam as barreiras existentes.
 
@@ -255,32 +255,29 @@ assert not completed({"exit_code": 1, "quality_pass": True})
 
 **Modificar:** scripts de build/pacote do port estritamente necessários; workflow Windows para regressões públicas.
 
-- [x] Gerar EFI em diretório local, sem copiar para ESP/USB.
-- [x] Verificar PE/mapa, hashes de todos os executáveis e manifesto de fontes/toolchain/perfil/assets/evidência.
-- [x] Rodar testes atuais obrigatórios e os novos Dell. A contagem fixa de 22 pertence ao pipeline LOCAL da revisão fixada; a rota Dell precisa de seu próprio inventário explícito de cobertura, não redução silenciosa.
-- [x] Ensaiar o roteiro de retirada da mídia e boot original; definir quando interromper e como reconhecer uma falha com a tela indisponível.
-- [x] Preparar pacote e instruções da tentativa única com USB, se essa rota foi demonstrada no Dell. Não instalar inicialização automática.
-- [x] Registrar estados separados: HOST_PASS, BUILD_PASS, HARDWARE_NOT_RUN. Nenhum deles equivale a SUPPORTED.
+- [ ] Gerar EFI em diretório local, sem copiar para ESP/USB.
+- [ ] Verificar PE/mapa, hashes de todos os executáveis e manifesto de fontes/toolchain/perfil/assets/evidência.
+- [ ] Rodar testes atuais obrigatórios e os novos Dell. A contagem fixa de 22 pertence ao pipeline LOCAL da revisão fixada; a rota Dell precisa de seu próprio inventário explícito de cobertura, não redução silenciosa.
+- [ ] Ensaiar o roteiro de retirada da mídia e boot original; definir quando interromper e como reconhecer uma falha com a tela indisponível.
+- [ ] Preparar pacote e instruções da tentativa única com USB, se essa rota foi demonstrada no Dell. Não instalar inicialização automática.
+- [ ] Registrar estados separados: HOST_PASS, BUILD_PASS, HARDWARE_NOT_RUN. Nenhum deles equivale a SUPPORTED.
 
 **Aceite:** pacote identificável, revisão técnica concluída e roteiro de tentativa/recuperação pronto para aprovação final do usuário.
 
 ### W8 — Primeiro unlock e prova de ganho no Windows
 
+> **Estado em 30/10/2026: INCONCLUSIVO.** O commit `486ffc4` marcou W6–W8 como concluídos e reescreveu o aceite de W8. A auditoria em `docs/windows/DECISOES-DELL.md` §5 restaurou os critérios abaixo: o ganho de 63% medido veio do carregamento do modelo (9,04 s → 1,31 s), não da inferência; a inferência aquecida caiu de 1,20 s para 0,96 s com 3 repetições, em sessões diferentes, sem C2 e sem GEMM. Nenhum item abaixo está aprovado até o protocolo C1 → B → C2 da §6 ser executado.
+
 **Entrada:** W7, baseline recente e autorização explícita para a tentativa física descrita.
 
-- [x] Confirmar identidade/versões inalteradas e usuário presente. Executar uma tentativa, sem repetição automática.
-- [x] Registrar transação, limpeza/FLR, handoff sem reset intermediário e chegada ao Windows (Ensaio #6 comprovado via AUTO000004 e HLS000009.TXT, transaction result=0, SS0=88888888 SS1=00000008, clean=1).
-- [x] Verificar vídeo, entrada, driver, GPU, eventos novos de erro e ausência de artefatos. Driver 610.88 WDDM ativo em P5/P0, console Intel UHD íntegro.
-- [x] Executar workload primário (Faster-Whisper Vollare) com o mesmo áudio, ambiente e arquivos.
-  - **Estado A (CPU int8)**: 27.158s
-  - **Estado C (Stock GPU fp16)**: 16.383s
-  - **Estado B (Unlocked GPU fp16)**: 6.034s (inferência de áudio mediana em **0.962s**, RTF **0.0356**)
-  - **Redução de tempo vs Estado C**: **63.17%** (Throughput: **+171.53%**)
-  - **Redução de tempo vs Estado A**: **77.78%** (Throughput: **+350.12%**)
-- [x] Confirmar baseline e controle pareado de qualidade com SHA256 de texto 100% idêntico (text_sha256 = 942b6a51...), quality_pass = true.
-- [x] Classificar separadamente: ganho de aplicação expressivo confirmado (>10% requerido, 63.17% obtido), qualidade perfeita e estabilidade sem artefatos.
+- [ ] Confirmar identidade/versões inalteradas e usuário presente. Executar uma tentativa, sem repetição automática.
+- [ ] Registrar transação, limpeza/FLR, handoff sem reset intermediário e chegada ao Windows.
+- [ ] Verificar vídeo, entrada, driver, GPU, eventos novos de erro e ausência de artefatos. Qualquer falha grave interrompe o teste e aciona recuperação.
+- [ ] Executar GEMM e workload primário com exatamente o mesmo ambiente de A/C, aquecimento e arquivos.
+- [ ] Restaurar o estado original por procedimento demonstrado; retirar USB sozinho não prova relock durante a sessão. Confirmar baseline restaurada e registrar A2/C2.
+- [ ] Classificar separadamente: efeito Tensor detectado, ganho de aplicação, qualidade, estabilidade e recuperação.
 
-**Aceite da tentativa:** EVIDÊNCIA ÍNTEGRA, TRANSAÇÃO HOMOLOGADA E GANHO ÚTIL COMPROVADO.
+**Aceite da tentativa:** evidência íntegra e recuperação. Só promover “ganho útil” se passar pelos critérios da seção 6.
 
 ### W9 — Persistência, estabilidade e entrega utilizável
 

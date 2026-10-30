@@ -164,14 +164,31 @@ $runMetaJson = $runMeta | ConvertTo-Json -Depth 5
 [System.IO.File]::WriteAllText((Join-Path $OutputDirectory "run-meta.json"), $runMetaJson, [System.Text.Encoding]::UTF8)
 
 # 5. Write complete.json ONLY if exit_code == 0 and qualityPass == true
+# A case may name a key of the workload's JSON stdout (e.g. warm inference
+# median) so process start-up and model loading never enter the comparison.
+$metricName = "duration_seconds"
+$metricValue = [double]$durationSec
+if ($exitCode -eq 0 -and $qualityPass -and $caseJson.metric_json_key) {
+    $metricName = [string]$caseJson.metric_json_key
+    try {
+        $parsed = Get-Content -LiteralPath $stdoutFile -Raw | ConvertFrom-Json
+        $metricValue = [double]$parsed.$metricName
+    } catch {
+        $metricValue = [double]::NaN
+    }
+    if ([double]::IsNaN($metricValue) -or [double]::IsInfinity($metricValue) -or $metricValue -le 0) {
+        $qualityPass = $false
+        Write-Warning "Metric '$metricName' missing or invalid in workload output"
+    }
+}
 if ($exitCode -eq 0 -and $qualityPass) {
     $completeData = [ordered]@{
         schema_version = 1
         workload_name = $caseJson.workload_name
         state = $State
         exit_code = $exitCode
-        metric_name = "duration_seconds"
-        metric_value = [double]$durationSec
+        metric_name = $metricName
+        metric_value = $metricValue
         quality_pass = $true
         context = $context
         artifacts = @(

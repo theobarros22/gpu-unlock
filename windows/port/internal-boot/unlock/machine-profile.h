@@ -225,6 +225,12 @@
  * Hardware evidence pinned in captures dell-g15-5530-capture-1/2.
  * Rota 1 (pure headless dGPU; display is on Intel UHD). */
 #include "profile-dell-research.h"
+#if !defined(GU_CONSOLE_CHILD_COUNT) || GU_CONSOLE_CHILD_COUNT != 0 || GU_CONSOLE_AGGREGATE != 0
+#error Dell research profile must declare an unattached dGPU (aggregate 0, child count 0)
+#endif
+/* Explicit switch for the hybrid route: an undefined GU_CONSOLE_CHILD_COUNT
+ * also evaluates to 0 in #if, so Dell-only branches must never key on it. */
+#define GU_HYBRID_DGPU_NO_CONSOLE 1
 
 #define GU_ROOT_PORT_DEVICE 1U
 #define GU_ROOT_PORT_FUNCTION 0U
@@ -315,4 +321,7 @@
 #define GU_EDID_STOP 0U
 #define GU_EDID_TEXT_BYTES 0U
 #define GU_EDID_TEXT_SHA256 ""
+#endif
+#if defined(GU_HYBRID_DGPU_NO_CONSOLE) && !defined(GU_PROFILE_DELL_G15_RESEARCH)
+#error The unattached-dGPU route is reviewed only for the Dell G15 research profile
 #endif

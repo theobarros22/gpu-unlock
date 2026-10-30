@@ -169,14 +169,20 @@ static EFI_STATUS OpenLog(VOID) {
   }
   return EFI_VOLUME_FULL;
 }
+#ifdef GU_FULL_UNLOCK
+static BOOLEAN SameEvent(const char *a,const char *b) {
+  while(*a && *a==*b){a++;b++;}
+  return *a==*b;
+}
+/* These two records carry raw register values in Status, not a failure. */
+static BOOLEAN ValueRecord(const char *Event) {
+  return Event && (SameEvent(Event,"pre-release-cold-wpr2-hi") || SameEvent(Event,"pre-release-cold-ss0"));
+}
+#endif
 static EFI_STATUS Record(VOID *Context,const char *Event,EFI_STATUS Status) {
   (void)Context;char text[160];UINTN n=0;
 #ifdef GU_FULL_UNLOCK
-  if(Status!=EFI_SUCCESS &&
-     !(Event && Event[0]=='p' && Event[1]=='r' && Event[2]=='e' &&
-       Event[12]=='c' && (Event[17]=='s' || Event[17]=='w'))) {
-    ScreenStatus(Event,Status);
-  }
+  if(Status!=EFI_SUCCESS && !ValueRecord(Event))ScreenStatus(Event,Status);
 #endif
   if(!Log)return EFI_DEVICE_ERROR;
   while(*Event && n<100)text[n++]=*Event++;

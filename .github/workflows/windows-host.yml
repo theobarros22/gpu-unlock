@@ -59,3 +59,20 @@ jobs:
         shell: powershell
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File windows/tests/test_runner.ps1
+
+  dell-hybrid-guards:
+    name: Dell Hybrid Guard Host Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Dell guard and family regressions
+        working-directory: windows/port/internal-boot/unlock
+        run: |
+          clang --version
+          python -I tests/test_dell_hybrid_guards.py -v
+          python -I tests/test_gpu_families.py
+          python -I tests/test_ga107_research.py

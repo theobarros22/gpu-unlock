@@ -41,7 +41,7 @@ static const UINT8 RtxPath[]={GU_RTX_PATH_BYTES};
 #define GU_RTX_DISPLAY_BYTES (sizeof(RtxPath))
 #ifdef GU_PROFILE_LOCAL
 _Static_assert(GU_RTX_DISPLAY_BYTES>=30 && GU_RTX_DISPLAY_BYTES<=GU_GPU_DISPLAY_PATH_MAX_BYTES,"LOCAL GPU path length outside bounded contract");
-#elif GU_CONSOLE_CHILD_COUNT == 0
+#elif defined(GU_HYBRID_DGPU_NO_CONSOLE)
 _Static_assert(GU_RTX_DISPLAY_BYTES==28,"reviewed GPU paths retain their exact size");
 #else
 _Static_assert(GU_RTX_DISPLAY_BYTES==36,"reviewed GPU paths retain their exact size");
@@ -470,7 +470,7 @@ static EFI_STATUS __attribute__((unused)) Alive(EFI_SYSTEM_TABLE *t,PLAN *p) {
   return Displays(t,p,FALSE);
 }
 EFI_STATUS GuPrepareConsole(EFI_SYSTEM_TABLE *t,GU_PREPARE_LOG log,VOID *context) {
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
   PreparedReady=FALSE;
   if(!t || !t->BootServices || !log)return EFI_INVALID_PARAMETER;
   EFI_BOOT_SERVICES *bs=t->BootServices;
@@ -572,7 +572,7 @@ EFI_STATUS GuPrepareConsole(EFI_SYSTEM_TABLE *t,GU_PREPARE_LOG log,VOID *context
 #endif
 }
 EFI_STATUS GuVerifyPreparedConsole(EFI_SYSTEM_TABLE *t) {
-#if GU_CONSOLE_CHILD_COUNT == 0
+#ifdef GU_HYBRID_DGPU_NO_CONSOLE
   if(!PreparedReady || !t || !t->BootServices || !PreparedGraph)return EFI_NOT_READY;
   return EFI_SUCCESS;
 #else

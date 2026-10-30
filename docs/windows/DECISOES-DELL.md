@@ -68,3 +68,38 @@ A execução em hardware real via `BOOTX64.EFI` no Dell G15 5530 comprovou os se
    - VBIOS ROM extraída com sucesso: `PROM.BIN` (1.048.576 bytes, SHA256: `e8f866920f803f61d67d805ff15ea46b1046c18c588def0f962fdcd8e937057c`)
    - Driver GOP Dell NVIDIA extraído: `IMG70.BIN` (159.456 bytes, versão `6001a`, .text SHA256: `d622c6f68201bf0d79658a844b032e2ecadab7e457e9cd608c16ceadc74cb13b`)
    - FWSEC container: localizado com precisão em `0x42d74`, tamanho `0xea00`, 3 assinaturas válidas.
+
+---
+
+## 5. Auditoria de W6–W8 e evidência das guardas Dell (30/10/2026)
+
+### 5.1. O que as capturas comprovam
+
+| Guarda relaxada no perfil Dell | Evidência | Fonte |
+|---|---|---|
+| BME já ativo no cold boot | Registrador de comando da dGPU `0x0006` (memória + bus master) nas duas capturas: `cfg dwords=25ec10de 00100006 ...` | `windows/local/captures/dell-g15-5530-capture-{1,2}/DIAG00.TXT` (privado) |
+| Sem GOP NVIDIA (`GU_HYBRID_DGPU_NO_CONSOLE`) | 2 GOPs no pré-boot: um com caminho `PciRoot/Pci(2,0)/AcpiAdr` (Intel UHD) e o console agregado sem caminho. Nenhum GOP em `01:00.0` | mesma captura, linhas `gops=0002` |
+| Firmware GA102 em chip GA107 | No RM aberto 610.43.03, `kgspGetBinArchiveBooterLoadUcode` e `kgspGetBinArchiveGspRmBoot` usam a variante `_GA102` para `GA102 \| GA103 \| GA104 \| GA106 \| GA107` | `src/nvidia/generated/g_kernel_gsp_nvoc.c` do pacote `NVIDIA-kernel-module-source-610.43.03` |
+
+Limites: os arquivos das duas capturas têm o mesmo horário de gravação, então não há como afirmar que vieram de dois cold boots independentes. Na captura 1, a leitura MMIO foi recusada (`probe-unreviewed-envelope`).
+
+### 5.2. Regressão corrigida
+
+No `486ffc4`, os ramos Dell usavam `#if GU_CONSOLE_CHILD_COUNT == 0`. Uma macro indefinida vale 0 no pré-processador. Em `unlock/headless-policy.h`, incluído por `app.c` sem o padrão de `prepare-console.c`, a regra de console Dell entrou no filho de unlock da B650M 3090 FE, da X870 3090 Ti e da H610M 3060. Correção: os ramos usam `GU_HYBRID_DGPU_NO_CONSOLE`, definido só no perfil Dell. `machine-profile.h` recusa compilar essa macro com outro perfil, e também recusa um perfil Dell que declare filhos de console. Teste: `internal-boot/unlock/tests/test_dell_hybrid_guards.py`, que dá 15 falhas no código do `486ffc4` e passa com a correção.
+
+`handoff.c`: o filtro que tira da tela os registros `pre-release-cold-wpr2-hi` e `pre-release-cold-ss0` agora compara o nome exato. Antes, lia `Event[17]` sem conferir o tamanho da string. Os dois registros levam valores de registrador no campo de status. A falha real da pré-condição (`pre-release-cold-check`) continua aparecendo na tela e pulando o unlock.
+
+### 5.3. Resultado de W8 reclassificado: INCONCLUSIVO
+
+| | C (29/10, 22:56) | B (30/10, 07:49) |
+|---|---|---|
+| Carregamento do modelo | 9,036 s | 1,310 s |
+| Inferência aquecida, mediana de 3 | 1,2015 s (1,08–1,41) | 0,9622 s (0,95–0,99) |
+| Duração total do processo | 16,38 s | 6,03 s |
+
+Os 63% comparam a duração total do processo, quase toda feita de carregamento de disco. A inferência aquecida caiu ~20%, com n=3, em sessões diferentes, sem C2 e sem GEMM. A dispersão de C passa dos 5% da §6 do plano.
+
+### 5.4. Pendências que ficam abertas
+
+- `local-profile.ps1` coloca o perfil Dell na lista `$reviewed` do manifesto USB. O plano proíbe promover o Dell sem W9. Fica registrado, sem alteração, até a decisão do operador.
+- O plano pede uma única tentativa física. O W8 cita "Ensaio #6", e os logs `HLS000009.TXT` e `AUTO000004` não estão em `windows/local`.

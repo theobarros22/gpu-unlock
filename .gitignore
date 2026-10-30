@@ -33,6 +33,7 @@ windows/port/research/profile/local/
 windows/port/**/profile-local.h
 windows/port/**/platform-config.h
 windows/port/**/profile-dell-research.h
+!windows/port/internal-boot/unlock/tests/fixtures/dell-g15/profile-dell-research.h
 windows/port/benchmark/output/
 windows/port/release/output/
 windows/port/unlock/output/
