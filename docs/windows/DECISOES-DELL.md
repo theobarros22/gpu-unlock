@@ -21,8 +21,9 @@ O inventário sanitizado em host Windows (`windows/local/diagnostics/inventory.j
 | **Driver NVIDIA** | `610.88` (WDDM 3.2, CUDA UMD 13.3) | nvidia-smi query |
 | **VRAM Total** | 6144 MiB (GDDR6) | nvidia-smi query |
 | **GPU Integrada (iGPU)** | Intel(R) UHD Graphics (`8086:A78B`, Subsystem `1028:0BF8`) | Win32_VideoController |
-| **Estado Secure Boot** | Acesso negado sem elevação (não consultado com bypass) | Confirm-SecureBootUEFI |
-| **Estado BitLocker** | Volume C: acesso negado sem elevação | Get-BitLockerVolume |
+| **Estado Secure Boot** | **ATIVO (`UEFISecureBootEnabled = 1`)** | `HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State` |
+| **ESP Windows Real (GUID)** | `{0d381b23-ebd2-43b1-ac69-9b33273b73ce}` (Partição 1, NVMe 200 MiB) | `Get-Partition -DiskNumber 0` |
+| **Estado BitLocker** | Protegido / Requer verificação prévia de Chave de Recuperação | `manage-bde -status` (acesso restrito) |
 | **Pressão de Memória** | ~845 MiB livres no momento da coleta (~16 GB total) | Win32_OperatingSystem |
 
 ---
