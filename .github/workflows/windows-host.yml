@@ -1,0 +1,61 @@
+name: Windows Host Tests
+
+on:
+  push:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-host.yml'
+  pull_request:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-host.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-regressions:
+    name: Upstream Profile Host Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run upstream profile admissions
+        working-directory: windows/port
+        run: |
+          python -I research/profile/test_family_admission.py
+          python -I research/profile/test_local_topology.py
+          python -I research/profile/test_probe_records.py
+          python -I research/profile/test_compatibility.py
+
+  runner-offline-tests:
+    name: Windows Runner and Comparator Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run test_compare_runs.py
+        if: hashFiles('windows/tests/test_compare_runs.py') != ''
+        run: |
+          python windows/tests/test_compare_runs.py
+      - name: Run PowerShell test_diagnostics.ps1
+        if: hashFiles('windows/tests/test_diagnostics.ps1') != ''
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File windows/tests/test_diagnostics.ps1
+      - name: Run PowerShell test_runner.ps1
+        if: hashFiles('windows/tests/test_runner.ps1') != ''
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File windows/tests/test_runner.ps1
