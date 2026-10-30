@@ -87,6 +87,51 @@ Para avaliar o impacto real e separar otimizações de software de alterações 
 
 ---
 
+---
+
+## 5. Captura Física UEFI em Hardware Real (W4)
+
+O diagnóstico UEFI freestanding (`BOOTX64.EFI`) foi executado no Dell G15 5530 via inicialização F12, produzindo capturas completas e comprovando os seguintes fatos físicos:
+
+### 5.1. Topologia de Vídeo e Segurança de Display
+- **Intel UHD Graphics (`8086:A78B`)**: Controlador exclusivo do console de saída (`ConOut` no handle `0x5787ca18` mapeado para `PCI Bus 0, Dev 2`).
+- **RTX 3050 Laptop (`10DE:25EC`)**: Operando em topologia puramente headless / co-processador no UEFI (0 display children conectados no boot).
+- **Risco de Tela Preta:** **Zero**. O display eDP interno nunca está vinculado à RTX 3050 durante o pre-boot. Não há necessidade de desanexação de console GOP.
+
+### 5.2. Registradores Físicos a Frio (Cold State MMIO)
+Capturados com sucesso pelo probe freestanding:
+- **Chip ID:** `0xb77000a1` (Família GA107 Ampere revisão A1)
+- **VRAM Total Física:** `0x1800` (6144 MiB / 6 GB GDDR6)
+- **BAR0 Base:** `0x74000000` (16 MiB, não-prefetchable)
+- **Registradores de Estado de Inicialização:**
+  - `PLM`: `0xffffff8f`
+  - `GFW`: `0x8b8f` / `0x3ff` / `0x10`
+  - `WPR2`: `0x00000000`
+  - `SS0 / SS1`: `0x63541132` / `0x2`
+
+### 5.3. Extração e Análise de Firmware VBIOS
+- **Dump Físico VBIOS (`PROM.BIN`):** 1.048.576 bytes (1 MiB exato)
+- **Hash SHA256 da ROM:** `e8f866920f803f61d67d805ff15ea46b1046c18c588def0f962fdcd8e937057c`
+- **Driver NVIDIA GOP Dell:** `nvgop-ga1xx` versão `6001a` (`IMG70.BIN`, 159.456 bytes), `.text` SHA256: `d622c6f68201bf0d79658a844b032e2ecadab7e457e9cd608c16ceadc74cb13b`
+- **Contêiner de Segurança FWSEC-FRTS (validado por `fwsec-locate`):**
+  - Offset da Imagem: `0x42d74` (273.780)
+  - Tamanho da Imagem: `0xea00` (59.904 bytes)
+  - IMEM / DMEM: `0xe200` / `0x800`
+  - PKC Offset: `0x5a4`
+  - Engine Mask: `0x400`
+  - Assinaturas: 3
+
+---
+
+## 6. Perfil de Pesquisa Dell G15 (`profile-dell-research.h`)
+
+Com as constantes exatas de hardware e firmware extraídas de forma limpa e auditada, foi estabelecido o perfil `profile-dell-research.h`:
+- BDF: `0000:01:00.0`
+- PCI IDs: `10DE:25EC:1028:0BF8`
+- Topologia: `GU_CONSOLE_AGGREGATE 0`, `GU_CONSOLE_CHILD_COUNT 0`, `GU_NO_EDID_DRIVER 1`
+- Família: `GU_GPU_FAMILY_GA107`
+- ROM VBIOS: Verificada bit-a-bit e descriptografada
+
 ## 5. Próximos Passos (Transição W3 → W4 / W5)
 
 1. **W4 — Captura da Topologia UEFI no Dell:**

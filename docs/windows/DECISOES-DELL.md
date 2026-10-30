@@ -49,3 +49,22 @@ No ambiente pré-boot (UEFI DXE), a propriedade do console de saída (GOP - Grap
    - O chip GA107 (RTX 3050 Laptop) possui layout de registradores da família Ampere, mas dimensões e offsets de BAR0 devem ser validados contra o VBIOS real e o BAR reportado pelo UEFI antes de qualquer leitura PROM profunda.
 3. **Preservação de Integridade:**
    - O pacote diagnóstico só é montado para o disco/pendrive após confirmação de partição real fornecida pelo operador, impedindo substituição acidental de bootloader do Windows.
+
+---
+
+## 4. Confirmação Empírica da Rota 1 no Boot Físico (W4)
+
+A execução em hardware real via `BOOTX64.EFI` no Dell G15 5530 comprovou os seguintes fatos:
+
+1. **Adoção Formal da Rota 1 (Intel GOP Independente):**
+   - O console `ConOut` (`0x5787ca18`) está associado exclusivamente ao controlador gráfico Intel UHD (`010106000002` em Bus 0, Dev 2).
+   - A GPU dedicada NVIDIA RTX 3050 (`01:00.0`) não possui display handles ou buffers GOP abertos no pre-boot UEFI.
+   - Conclusão: O unlock do chip GA107 pode ser executado em modo acelerador puro sem necessidade de desanexação de console ou interrupção de vídeo.
+
+2. **Captura Frio-Total (Cold State MMIO e VBIOS):**
+   - Chip ID: `0xb77000a1` (GA107 Ampere)
+   - VRAM: `0x1800` (6144 MiB)
+   - BAR0: `0x74000000` (16 MiB)
+   - VBIOS ROM extraída com sucesso: `PROM.BIN` (1.048.576 bytes, SHA256: `e8f866920f803f61d67d805ff15ea46b1046c18c588def0f962fdcd8e937057c`)
+   - Driver GOP Dell NVIDIA extraído: `IMG70.BIN` (159.456 bytes, versão `6001a`, .text SHA256: `d622c6f68201bf0d79658a844b032e2ecadab7e457e9cd608c16ceadc74cb13b`)
+   - FWSEC container: localizado com precisão em `0x42d74`, tamanho `0xea00`, 3 assinaturas válidas.

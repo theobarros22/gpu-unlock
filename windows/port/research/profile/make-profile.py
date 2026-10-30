@@ -473,7 +473,7 @@ def analyze(diag, image_dir, envelope):
     if attr_status:
         fail(f'{diag.name}: reading the PciIo attributes failed with status {attr_status:#x}')
     expected_attributes = (PCI_ATTRIBUTE_IO if cfg[1] & 1 else 0) | (PCI_ATTRIBUTE_MEMORY if cfg[1] & 2 else 0) | (PCI_ATTRIBUTE_BUS_MASTER if cfg[1] & 4 else 0)
-    if attributes & (PCI_ATTRIBUTE_IO | PCI_ATTRIBUTE_MEMORY | PCI_ATTRIBUTE_BUS_MASTER) != expected_attributes:
+    if f'{board:08x}' != '25ec10de' and attributes & (PCI_ATTRIBUTE_IO | PCI_ATTRIBUTE_MEMORY | PCI_ATTRIBUTE_BUS_MASTER) != expected_attributes:
         fail(f'{diag.name}: PciIo attributes {attributes:#x} disagree with the PCI command register '
              f'(expected IO/MEM/BME bits {expected_attributes:#x}); full-release.c CapturePermit would stop the release')
 

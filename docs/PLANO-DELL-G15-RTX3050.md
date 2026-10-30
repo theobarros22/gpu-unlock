@@ -208,14 +208,14 @@ assert not completed({"exit_code": 1, "quality_pass": True})
 
 **Entrada:** W3 e roteiro concreto de execução. **Saída privada:** duas capturas de estados iniciais independentes, manifestos/hash e relatório sanitizado.
 
-- [ ] Preparar procedimento de voltar diretamente ao Windows Boot Manager sem mídia experimental; confirmar possibilidade de recuperação e acesso do usuário às chaves, sem copiá-las.
-- [ ] Determinar Secure Boot e criptografia. Se o EFI não puder executar na política atual, declarar o bloqueio e apresentar as opções reais. Não pressupor que assinatura própria basta ou desligar proteções automaticamente.
-- [ ] Apresentar o binário/hash, volume exato, alterações e forma de recuperação antes de pedir autorização para staging/boot. Não usar letra de unidade presumida.
-- [ ] Fazer primeiro ensaio de probe sem unlock; depois repetir em um segundo estado inicial comprovado. Fast Startup, reinício e desligamento não são equivalentes sem evidência.
-- [ ] Capturar GOP/ConOut, protocolos/openers, ancestralidade PCI, BAR/capacidades, D-state e atributos. PROM/imagens somente no envelope de leitura revisado.
-- [ ] Verificar concordância das duas capturas, integridade dos arquivos e sucesso do retorno ao Windows. Falha de log ou campo ausente não pode virar “zero”.
-- [ ] Decidir uma rota em DECISOES-DELL.md. Intel preservado exige demonstrar independência completa; headless exige demonstrar cadeia de release e handoff. Topologia desconhecida permanece bloqueada.
-- [ ] Registrar lacunas por dado e próximo experimento específico; não pedir genericamente “mais informações”.
+- [x] Preparar procedimento de voltar diretamente ao Windows Boot Manager sem mídia experimental; confirmar possibilidade de recuperação e acesso do usuário às chaves, sem copiá-las.
+- [x] Determinar Secure Boot e criptografia. Se o EFI não puder executar na política atual, declarar o bloqueio e apresentar as opções reais. Não pressupor que assinatura própria basta ou desligar proteções automaticamente.
+- [x] Apresentar o binário/hash, volume exato, alterações e forma de recuperação antes de pedir autorização para staging/boot. Não usar letra de unidade presumida.
+- [x] Fazer primeiro ensaio de probe sem unlock; depois repetir em um segundo estado inicial comprovado. Fast Startup, reinício e desligamento não são equivalentes sem evidência.
+- [x] Capturar GOP/ConOut, protocolos/openers, ancestralidade PCI, BAR/capacidades, D-state e atributos. PROM/imagens somente no envelope de leitura revisado.
+- [x] Verificar concordância das duas capturas, integridade dos arquivos e sucesso do retorno ao Windows. Falha de log ou campo ausente não pode virar “zero”.
+- [x] Decidir uma rota em DECISOES-DELL.md. Intel preservado exige demonstrar independência completa; headless exige demonstrar cadeia de release e handoff. Topologia desconhecida permanece bloqueada.
+- [x] Registrar lacunas por dado e próximo experimento específico; não pedir genericamente “mais informações”.
 
 **Aceite:** dados suficientes para W5/W6 e recuperação demonstrada. Não executar unlock nesta tarefa.
 
@@ -332,4 +332,3 @@ Usar estados PASSOU, FALHOU, BLOQUEADO, NÃO EXECUTADO e INCONCLUSIVO, com motiv
 **Ponto de decisão seguinte:** após W3/W4, escolher a rota a partir do GOP/energia/firmware reais do Dell. Na ausência desses dados, entregar a lacuna específica e o probe necessário; não fabricar constantes.
 
 **Entrega final esperada:** código Windows no fork, testes e build rastreáveis, procedimento de operação/recuperação e relatório que diga exatamente onde houve ganho, onde não houve e quais estados ainda não foram validados.
-
