@@ -5,12 +5,13 @@
  */
 #pragma once
 
-#if defined(GU_GPU_FAMILY_GA102) || defined(GU_GPU_FAMILY_GA104) || defined(GU_GPU_FAMILY_GA106) || defined(GU_GPU_FAMILY_NAME) || defined(GU_FAMILY_CHIP_ID)
+#if defined(GU_GPU_FAMILY_GA102) || defined(GU_GPU_FAMILY_GA104) || defined(GU_GPU_FAMILY_GA106) || defined(GU_GPU_FAMILY_GA107) || defined(GU_GPU_FAMILY_NAME) || defined(GU_FAMILY_CHIP_ID)
 #error GPU family traits must come from gpu-family.h
 #endif
 #define GU_GPU_FAMILY_GA102 102U
 #define GU_GPU_FAMILY_GA104 104U
 #define GU_GPU_FAMILY_GA106 106U
+#define GU_GPU_FAMILY_GA107 107U
 
 /* Existing generated headers retain their captured literal GU_CHIP_ID. Derive
  * metadata from that exact revision, without changing generator admission. */
@@ -21,6 +22,8 @@
 #define GU_GPU_FAMILY GU_GPU_FAMILY_GA104
 #elif GU_CHIP_ID == 0xb76000a1U
 #define GU_GPU_FAMILY GU_GPU_FAMILY_GA106
+#elif GU_CHIP_ID == 0xb77000a1U
+#define GU_GPU_FAMILY GU_GPU_FAMILY_GA107
 #else
 #error Captured chip has no reviewed GPU family implementation
 #endif
@@ -50,6 +53,12 @@
 #define GU_FAMILY_CHIP_ID 0xb76000a1U
 #if GU_BOARD_ID != 0x250410deU || GU_DEVICE_MEMORY_SIZE != 0x3000U
 #error Card identity or memory is outside the reviewed GA106 family combinations
+#endif
+#elif GU_GPU_FAMILY == GU_GPU_FAMILY_GA107
+#define GU_GPU_FAMILY_NAME "GA107"
+#define GU_FAMILY_CHIP_ID 0xb77000a1U
+#if GU_BOARD_ID != 0x25ec10deU || GU_DEVICE_MEMORY_SIZE != 0x1800U
+#error Card identity or memory is outside the reviewed GA107 family combinations
 #endif
 #else
 #error No reviewed implementation for the selected GPU family

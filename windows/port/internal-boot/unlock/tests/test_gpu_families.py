@@ -3,12 +3,13 @@ import argparse
 import itertools
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-CLANG = 'clang'
+CLANG = shutil.which('clang') or 'clang'
 
 
 def compile_source(source, defines=(), extra=()):
@@ -47,6 +48,11 @@ class FamilyTests(unittest.TestCase):
                  (102, 0x24c910de, 0x2000, 0xb72000a1),
                  (106, 0x250410de, 0x2000, 0xb76000a1),
                  (106, 0x248710de, 0x3000, 0xb76000a1),
+                 (107, 0x25ec10de, 0x2000, 0xb77000a1),
+                 (107, 0x25ec10de, 0x1800, 0xb77000a2),
+                 (107, 0x250410de, 0x1800, 0xb77000a1),
+                 (106, 0x25ec10de, 0x1800, 0xb76000a1),
+                 (107, 0x25ec10de, 0x1800, 0xb74000a1),
                  (204, 0x278610de, 0x3000, 0x194000a1),
                  (102, 0x220410de, 0x6000, 0xb74000a1)]
         for family, board, memory, chip in cases:
@@ -64,6 +70,11 @@ class FamilyTests(unittest.TestCase):
     def test_rtx3060ti_uses_the_shared_ga104_implementation(self):
         done=compile_source('#include "gpu-family.h"\n_Static_assert(GU_GPU_FAMILY == 104, "GA104");\n',
             ['-DGU_PROFILE_LOCAL','-DGU_BOARD_ID=0x24c910deU','-DGU_DEVICE_MEMORY_SIZE=0x2000U','-DGU_CHIP_ID=0xb74000a1U'])
+        self.assertEqual(done.returncode,0,done.stderr)
+
+    def test_rtx3050_uses_the_shared_ga107_implementation(self):
+        done=compile_source('#include "gpu-family.h"\n_Static_assert(GU_GPU_FAMILY == 107, "GA107");\n_Static_assert(GU_CHIP_ID == 0xb77000a1U, "GA107 chip");\n',
+            ['-DGU_PROFILE_LOCAL','-DGU_BOARD_ID=0x25ec10deU','-DGU_DEVICE_MEMORY_SIZE=0x1800U','-DGU_CHIP_ID=0xb77000a1U'])
         self.assertEqual(done.returncode,0,done.stderr)
 
     def test_profile_family_and_firmware_cannot_be_overridden(self):

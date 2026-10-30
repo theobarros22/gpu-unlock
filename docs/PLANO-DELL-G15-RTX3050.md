@@ -224,13 +224,13 @@ assert not completed({"exit_code": 1, "quality_pass": True})
 **Modificar no port:** `internal-boot/unlock/gpu-family.h`, `machine-profile.h`, `checks.c`; arquivos `vendor/layout_610.c`, `vbios_610.c`, `unlock_610.c` somente onde a auditoria demonstrar diferença.
 **Testar:** `internal-boot/unlock/tests/test_gpu_families.py`, `test_checks.c`, `test_port.c`, `test_app.c` e testes de firmware existentes.
 
-- [ ] Mapear diferenças entre GA10x Linux e UEFI: identificação de chip, VRAM de registro, seletores, FWSEC, região WPR, alocação/endereçamento e limpeza.
-- [ ] Não converter o chip Linux `0x177` diretamente em um dword UEFI inventado. Usar valor efetivamente lido e validar sua relação com a fonte.
-- [ ] Escrever teste de admissão experimental exata: 10DE:25EC / 1028:0BF8 / revisão e firmware local constatados. Subsystem correto sozinho não é suficiente.
-- [ ] Implementar a menor mudança de família necessária. Não alargar GA106, não reutilizar VRAM física reportada como tamanho de região reservada.
-- [ ] Rodar parser de PROM/FWSEC local contra limites e hashes verificados; rejeitar arquivo truncado, tamanho fora da região, overflow, assinatura/asset divergente e layout não coberto.
-- [ ] Reproduzir a transação em RAM com os inputs reais autorizados; injetar timeout e falhas após cada etapa. Comprovar contenção e que buffers DMA não são liberados enquanto dispositivo ainda possa acessá-los.
-- [ ] Reexecutar regressões de famílias existentes. Fixtures sintéticas devem ser rotuladas; não gerar prova física a partir delas.
+- [x] Mapear diferenças entre GA10x Linux e UEFI: identificação de chip, VRAM de registro, seletores, FWSEC, região WPR, alocação/endereçamento e limpeza.
+- [x] Não converter o chip Linux `0x177` diretamente em um dword UEFI inventado. Usar valor efetivamente lido e validar sua relação com a fonte.
+- [x] Escrever teste de admissão experimental exata: 10DE:25EC / 1028:0BF8 / revisão e firmware local constatados. Subsystem correto sozinho não é suficiente.
+- [x] Implementar a menor mudança de família necessária. Não alargar GA106, não reutilizar VRAM física reportada como tamanho de região reservada.
+- [x] Rodar parser de PROM/FWSEC local contra limites e hashes verificados; rejeitar arquivo truncado, tamanho fora da região, overflow, assinatura/asset divergente e layout não coberto.
+- [x] Reproduzir a transação em RAM com os inputs reais autorizados; injetar timeout e falhas após cada etapa. Comprovar contenção e que buffers DMA não são liberados enquanto dispositivo ainda possa acessá-los.
+- [x] Reexecutar regressões de famílias existentes. Fixtures sintéticas devem ser rotuladas; não gerar prova física a partir delas.
 
 **Aceite:** compatibilidade da transação e falhas demonstrada em host; a GPU real ainda não é considerada suportada.
 
