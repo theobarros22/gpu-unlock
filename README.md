@@ -2,7 +2,7 @@
 
 ### Your GeForce runs AI at half speed. This fixes it.
 
-![Version](https://img.shields.io/badge/version-2.0.0-76b900)![RTX 20 | 30 | 40](https://img.shields.io/badge/GeForce-RTX%2020%20%7C%2030%20%7C%2040-76b900?logo=nvidia&logoColor=white)![Linux](https://img.shields.io/badge/platform-Linux-informational?logo=linux&logoColor=white)![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue)![Stars](https://img.shields.io/github/stars/Zagitta/gpu-unlock?style=flat&color=yellow)
+![Version](https://img.shields.io/badge/version-2.0.0-76b900)![RTX 20 | 30 | 40](https://img.shields.io/badge/GeForce-RTX%2020%20%7C%2030%20%7C%2040-76b900?logo=nvidia&logoColor=white)![Linux | Windows](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-informational?logo=linux&logoColor=white)![Windows Experimental](https://img.shields.io/badge/Windows-Experimental%20(Dell%20G15%20RTX%203050)-0078D6?logo=windows&logoColor=white)![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue)![Stars](https://img.shields.io/github/stars/Zagitta/gpu-unlock?style=flat&color=yellow)
 
 **Up to 2× FP16 / BF16 / TF32 tensor throughput** · **+25–55% LLM prefill** · **+25–50% fine-tuning** · **+30–55% image generation**
 
@@ -23,7 +23,7 @@ to redo when NVIDIA releases a new driver.
 
 | Generation                | Cards                                                                                                                  | Status                    |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| **Ampere** (RTX 30)       | RTX 3050, 3060, 3060 Ti, 3070, 3070 Ti, 3080, 3080 Ti, 3090, 3090 Ti, plus RTX 3070/3080 Laptop GPUs                   | Stable, 100+ user reports |
+| **Ampere** (RTX 30)       | RTX 3050, 3060, 3060 Ti, 3070, 3070 Ti, 3080, 3080 Ti, 3090, 3090 Ti, plus RTX 3070/3080 Laptop GPUs                   | Stable (Linux) / Experimental Port (Windows RTX 3050) |
 | **Ada Lovelace** (RTX 40) | RTX 4060, 4060 Ti, 4070, 4070 SUPER, 4070 Ti, 4070 Ti SUPER, 4080, 4080 SUPER, 4090, 4090 D, RTX 4050/4060 Laptop GPUs | Experimental              |
 | **Turing** (RTX 20)       | RTX 2060, 2060 SUPER, 2070, 2070 SUPER, 2080, 2080 SUPER, 2080 Ti, Titan RTX                                           | Experimental              |
 | Blackwell (RTX 50)        |                                                                                                                        | Not supported             |
@@ -34,7 +34,7 @@ off runtime power management with `options nvidia NVreg_DynamicPowerManagement=0
 in `/etc/modprobe.d/` helps on some models, but expect mixed results.
 
 The exact PCI device IDs are in [`kernel/gpu_unlock/recipes.c`](kernel/gpu_unlock/recipes.c).
-Linux only. For Windows see the [FAQ](#faq).
+Linux kernel module in [kernel/](kernel/). Windows experimental port, diagnostics and benchmarks in [windows/](windows/) (see [Windows Support](#windows-support-dell-g15-5530--rtx-3050-laptop)).
 
 ---
 
@@ -113,8 +113,7 @@ A: No this is the one and only OG source for gpu-unlock. Crypto, websites, insta
 - Q: Does this depend on a specific driver version? I see `610.43.03` is pinned.  
 A: No the driver is only fetched to extract firmware this unlock depends on    
 - Q: What about Windows?  
-A: I don't run windows and don't plan to maintain it but [https://github.com/impacifist/Windows-GPU-UNLOCK](https://github.com/impacifist/Windows-GPU-UNLOCK) has built a port, YMMV.   
-There are windows installer's floating around but I would recommend being ++**very**++ careful with those.
+A: This repository now includes an experimental Windows port in [windows/](windows/), targeting Dell G15 5530 with RTX 3050 6GB Laptop GPU (GA107), based on [Windows-GPU-UNLOCK](https://github.com/impacifist/Windows-GPU-UNLOCK). It includes read-only diagnostics (Collect-Diagnostics.ps1), safe workload execution and statistical comparison (Run-Workload.ps1, Compare-Runs.py), and empirical benchmarks on real AI workloads (e.g. Vollare ASR Engine / faster-whisper achieving ~4× transcription speedup and 39.7% time reduction). See [Windows Support](#windows-support-dell-g15-5530--rtx-3050-laptop) and [docs/RESULTADOS-WINDOWS-RTX3050.md](docs/RESULTADOS-WINDOWS-RTX3050.md).
 - Q: What about Blackwell (RTX 50)?  
 A: Not supported and unlikely to happen.    
 - Q: Why did Nvidia handicap my GPU?  
@@ -241,6 +240,23 @@ before trying again.
 The kernel module and local packaging are GPL-2.0-only. The generated buffer
 derives from the pinned CMP reference; NVIDIA firmware remains under its own
 terms. See `firmware/NOTICE.md` and `licenses/` for attribution and notices.
+
+---
+
+## Windows Support (Dell G15 5530 / RTX 3050 Laptop)
+
+An experimental Windows port, testing harness, and empirical benchmark suite are integrated into this fork in [windows/](windows/):
+
+- **Port Base & Upstream Tracking:** [windows/port/](windows/port/) imported and pinned from [Windows-GPU-UNLOCK](https://github.com/impacifist/Windows-GPU-UNLOCK) (2637414), preserving all MIT/EDK2 licenses and NVIDIA notices in [windows/UPSTREAM.md](windows/UPSTREAM.md).
+- **Read-Only Diagnostics:** [windows/Collect-Diagnostics.ps1](windows/Collect-Diagnostics.ps1) gathers a sanitized inventory of the GPU, BIOS, VBIOS, display topology, and verified ESP GUID ({0d381b23-ebd2-43b1-ac69-9b33273b73ce}) without modifying host configuration.
+- **RTX 3050 Benchmark Harness:** Custom CUDA/cuBLAS compute benchmark [windows/port/benchmark/compute-benchmark-3050.cu](windows/port/benchmark/compute-benchmark-3050.cu) with 80 automated synthetic test scenarios.
+- **Isolated Workload Runner & Offline Comparator:** [windows/Run-Workload.ps1](windows/Run-Workload.ps1) and [windows/Compare-Runs.py](windows/Compare-Runs.py) ensure reproducible execution with process containment, telemetry recording, and statistical significance validation.
+- **Empirical AI Results (Vollare Video Engine / ASR):** Evaluated on real-world studio audio (ct_1_speed130.wav and full 5-minute master):
+  - **-74.75% neural transcription time (3.96× speedup)**: 4.76s -> 1.20s (RTF 0.176 -> 0.044).
+  - **-39.68% end-to-end pipeline duration**: 27.16s -> 16.38s (+65.77% effective throughput).
+  - **Bit-for-bit identical text output** (SHA256 verified) with zero degradation.
+  - Complete report in [docs/RESULTADOS-WINDOWS-RTX3050.md](docs/RESULTADOS-WINDOWS-RTX3050.md).
+- **Topology & Safety Audit:** Strict verification of probe read-only nature in [docs/windows/DECISOES-DELL.md](docs/windows/DECISOES-DELL.md).
 
 # Support me
 

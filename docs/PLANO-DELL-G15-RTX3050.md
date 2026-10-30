@@ -111,11 +111,11 @@ Não fornecer prazo fechado para M3–M5 antes de M2. Topologia e firmware desco
 
 **Modificar/criar:** `windows/port/`, `windows/UPSTREAM.md`, `.gitignore`, `.github/workflows/windows-host.yml`.
 
-- [ ] Inspecionar branch, diff e PR. O checkout da sessão anterior tem alterações locais equivalentes a commits feitos via API; não resetar nem sobrescrever.
-- [ ] Criar branch Windows a partir do estado remoto verificado, preservando o PR existente. O próximo PR de implementação deve ter Windows no título e escopo; a revisão documental pode continuar no PR 1.
-- [ ] Importar a árvore de fontes do commit Windows fixado, sem reescrever seus caminhos internos. Auditar LICENSE, LICENSES e THIRD_PARTY_NOTICES e preservá-los.
-- [ ] Registrar versões/localização de Python, MSVC, clang e lld-link. Instalar somente componente ausente em ambiente local acordado; não trocar driver ou CUDA de aplicativos existentes.
-- [ ] Executar regressões sem captura, a partir de `windows/port/`:
+- [x] Inspecionar branch, diff e PR. O checkout da sessão anterior tem alterações locais equivalentes a commits feitos via API; não resetar nem sobrescrever.
+- [x] Criar branch Windows a partir do estado remoto verificado, preservando o PR existente. O próximo PR de implementação deve ter Windows no título e escopo; a revisão documental pode continuar no PR 1.
+- [x] Importar a árvore de fontes do commit Windows fixado, sem reescrever seus caminhos internos. Auditar LICENSE, LICENSES e THIRD_PARTY_NOTICES e preservá-los.
+- [x] Registrar versões/localização de Python, MSVC, clang e lld-link. Instalar somente componente ausente em ambiente local acordado; não trocar driver ou CUDA de aplicativos existentes.
+- [x] Executar regressões sem captura, a partir de `windows/port/`:
 
 ~~~powershell
 rtk proxy python -I research/profile/test_family_admission.py
@@ -124,8 +124,8 @@ rtk proxy python -I research/profile/test_probe_records.py
 rtk proxy python -I research/profile/test_compatibility.py
 ~~~
 
-- [ ] Preservar stdout, stderr, exit code e versão. Dependência ausente é BLOQUEADO, não PASSOU. Configurar CI Windows com os mesmos testes que passaram localmente; não acrescentar testes dependentes de ativos privados à CI pública.
-- [ ] Fazer commit da importação separado dos patches Dell.
+- [x] Preservar stdout, stderr, exit code e versão. Dependência ausente é BLOQUEADO, não PASSOU. Configurar CI Windows com os mesmos testes que passaram localmente; não acrescentar testes dependentes de ativos privados à CI pública.
+- [x] Fazer commit da importação separado dos patches Dell.
 
 **Aceite:** fontes rastreáveis e testes de host reproduzíveis. Nada é inicializado na GPU.
 
@@ -135,8 +135,8 @@ rtk proxy python -I research/profile/test_compatibility.py
 
 **Interface nova proposta:** `-OutputDirectory <diretório novo>`; sem modo “apply”. Gravar `inventory.json`, com `schema_version=1`, timestamp UTC, versões, GPU/PCI, BIOS/VBIOS, RAM disponível/comprometida, estado de energia e lista de lacunas. Campos sem acesso usam `null` e uma razão, nunca “desativado”.
 
-- [ ] Começar com testes para ferramenta ausente, acesso negado, duas GPUs NVIDIA, campo N/A e redação de serial/UUID/usuário/caminhos pessoais.
-- [ ] Usar consultas como estas, selecionando somente campos necessários:
+- [x] Começar com testes para ferramenta ausente, acesso negado, duas GPUs NVIDIA, campo N/A e redação de serial/UUID/usuário/caminhos pessoais.
+- [x] Usar consultas como estas, selecionando somente campos necessários:
 
 ~~~powershell
 rtk proxy nvidia-smi --query-gpu=name,pci.bus_id,pci.device_id,driver_version,vbios_version,memory.total,memory.used,temperature.gpu,power.limit --format=csv
@@ -145,10 +145,10 @@ rtk proxy powershell -NoProfile -Command "Get-CimInstance Win32_OperatingSystem 
 rtk proxy powershell -NoProfile -Command "Get-CimInstance Win32_VideoController | Select-Object Name,PNPDeviceID,DriverVersion"
 ~~~
 
-- [ ] Coletar Secure Boot/criptografia com captura explícita de erro; não elevar automaticamente, não coletar chaves. Identidade PNP detalhada fica privada até sanitização.
-- [ ] Inventariar versões dos runtimes já usados por Whisper, ComfyUI e Ollama, sem importações que baixem modelos ou executem cargas.
-- [ ] Executar o coletor real, conferir JSON e produzir uma lista de fatos, hipóteses e dados faltantes.
-- [ ] Anexar ao relatório apenas a versão sanitizada; testar que nenhum serial/chave é incluído.
+- [x] Coletar Secure Boot/criptografia com captura explícita de erro; não elevar automaticamente, não coletar chaves. Identidade PNP detalhada fica privada até sanitização.
+- [x] Inventariar versões dos runtimes já usados por Whisper, ComfyUI e Ollama, sem importações que baixem modelos ou executem cargas.
+- [x] Executar o coletor real, conferir JSON e produzir uma lista de fatos, hipóteses e dados faltantes.
+- [x] Anexar ao relatório apenas a versão sanitizada; testar que nenhum serial/chave é incluído.
 
 **Aceite:** diagnóstico repetível que não muda configuração, instala pacote ou inicia modelo. Pressão de RAM é registrada como possível confundidor, não resolvida encerrando processos.
 
@@ -158,18 +158,18 @@ rtk proxy powershell -NoProfile -Command "Get-CimInstance Win32_VideoController 
 **Criar no port:** `benchmark/compute-benchmark-3050.cu`, reutilizando o núcleo existente e as verificações de referência.
 **Criar no fork:** runner, comparador e testes listados na seção 4.
 
-- [ ] Testar primeiro seleção explícita da 3050, GPU errada, índice/BDF divergente, executável alterado, execução incompleta e dados sem referência numérica.
-- [ ] Adicionar variante 3050 ao runner e ao manifesto. Selecionar por identidade confirmada, não pelo BDF fixo `01:00.0` de outra máquina.
-- [ ] Inspecionar as exigências CUDA/cuBLAS existentes. Preservá-las no primeiro build se disponíveis; se mudar a versão, versionar o protocolo de benchmark e impedir comparação entre protocolos diferentes.
-- [ ] Rodar preflight sem GEMM. Só depois executar carga numa janela adequada, sem interromper tarefas ativas.
-- [ ] Medir quatro modos: FP32 de controle, FP16 e BF16 com acumulação FP32, TF32. Manter checagem numérica existente, rejeitar NaN/Inf e justificar qualquer mudança de tolerância. Se um modo não puder executar, registrar indisponível.
-- [ ] Garantir sincronização CUDA antes de encerrar cada tempo. Registrar tamanho de matriz, algoritmo/modo, versão das bibliotecas e aquecimento. Ajustar tamanho à VRAM livre uma vez e congelá-lo para todos os estados.
-- [ ] Priorizar **faster-whisper e ComfyUI**, pois há caminhos locais Tensor a investigar; executar os dois quando instalados e houver fixture autorizada. Ollama e vídeo entram como avaliação complementar, não condição para começar.
-- [ ] Para Whisper: mesmo áudio autorizado, modelo/hash, backend, precisão, batch, idioma e parâmetros; registrar RTF, segundos e transcrição. Para ComfyUI: mesmo modelo/hash, workflow, seed, sampler, passos, resolução e batch=1; registrar tempo aquecido e tempo total.
-- [ ] Para Ollama: congelar modelo/quantização/contexto/prompt, separar carregamento, prefill e decode, registrar distribuição CPU/GPU e memória. Não prometer ganho em decode quantizado.
-- [ ] Para FFmpeg/editor: selecionar um projeto pequeno reproduzível. Separar exportação sem efeitos (controle NVENC) de efeito/IA que efetivamente use GPU. Validar vídeo decodificável, duração, frames e áudio; congelar qualidade.
-- [ ] Criar estados A e, somente se houver mudança fundamentada de aplicativo, C. Uma mudança por vez; registrar original e reversão. Congelar C antes do ensaio B.
-- [ ] Fazer commit dos executores/testes; salvar baseline bruto localmente.
+- [x] Testar primeiro seleção explícita da 3050, GPU errada, índice/BDF divergente, executável alterado, execução incompleta e dados sem referência numérica.
+- [x] Adicionar variante 3050 ao runner e ao manifesto. Selecionar por identidade confirmada, não pelo BDF fixo `01:00.0` de outra máquina.
+- [x] Inspecionar as exigências CUDA/cuBLAS existentes. Preservá-las no primeiro build se disponíveis; se mudar a versão, versionar o protocolo de benchmark e impedir comparação entre protocolos diferentes.
+- [x] Rodar preflight sem GEMM. Só depois executar carga numa janela adequada, sem interromper tarefas ativas.
+- [x] Medir quatro modos: FP32 de controle, FP16 e BF16 com acumulação FP32, TF32. Manter checagem numérica existente, rejeitar NaN/Inf e justificar qualquer mudança de tolerância. Se um modo não puder executar, registrar indisponível.
+- [x] Garantir sincronização CUDA antes de encerrar cada tempo. Registrar tamanho de matriz, algoritmo/modo, versão das bibliotecas e aquecimento. Ajustar tamanho à VRAM livre uma vez e congelá-lo para todos os estados.
+- [x] Priorizar **faster-whisper e ComfyUI**, pois há caminhos locais Tensor a investigar; executar os dois quando instalados e houver fixture autorizada. Ollama e vídeo entram como avaliação complementar, não condição para começar.
+- [x] Para Whisper: mesmo áudio autorizado, modelo/hash, backend, precisão, batch, idioma e parâmetros; registrar RTF, segundos e transcrição. Para ComfyUI: mesmo modelo/hash, workflow, seed, sampler, passos, resolução e batch=1; registrar tempo aquecido e tempo total.
+- [x] Para Ollama: congelar modelo/quantização/contexto/prompt, separar carregamento, prefill e decode, registrar distribuição CPU/GPU e memória. Não prometer ganho em decode quantizado.
+- [x] Para FFmpeg/editor: selecionar um projeto pequeno reproduzível. Separar exportação sem efeitos (controle NVENC) de efeito/IA que efetivamente use GPU. Validar vídeo decodificável, duração, frames e áudio; congelar qualidade.
+- [x] Criar estados A e, somente se houver mudança fundamentada de aplicativo, C. Uma mudança por vez; registrar original e reversão. Congelar C antes do ensaio B.
+- [x] Fazer commit dos executores/testes; salvar baseline bruto localmente.
 
 **Contrato proposto de execução:** `Run-Workload.ps1 -CaseFile <JSON> -State A|C|B -OutputDirectory <novo>`. O JSON contém executável e array de argumentos; executar sem `Invoke-Expression`, registrar hashes e nunca aceitar comandos vindos de logs. Timeout encerra somente o processo/filhos iniciados pelo runner. Arquivo `complete.json` só é escrito depois de exit code zero, resultado parseável e validação de qualidade aprovada.
 
@@ -194,13 +194,13 @@ assert not completed({"exit_code": 1, "quality_pass": True})
 **Modificar no port:** `internal-boot/boot/probe.c`, `test_probe_generic.c`, `research/profile/build-probe.ps1` e testes de build/records.
 **Criar:** `docs/windows/DECISOES-DELL.md`, registrando decisões com evidência.
 
-- [ ] Primeiro reproduzir o comportamento atual: 25EC inventariado, sem leitura profunda autorizada. Testar contadores de zero escrita PCI/MMIO, DMA, FLR e detach.
-- [ ] Separar inventário básico de leitura profunda. O primeiro pode coletar PCI/protocolos/GOP sem admitir a GPU à transação.
-- [ ] Auditar a janela de leitura GA107 por fontes e limites antes de habilitar MMIO/PROM; leitura MMIO não é automaticamente inofensiva. Não deduzir endereço/limite só do nome Ampere.
-- [ ] Cobrir no teste GPU duplicada, BAR inválido, energia desconhecida/D3, mudança de identidade, grafo incompleto e falha de gravação do log. Todos recusam a fase não comprovada.
-- [ ] Preservar exclusão de código de unlock na compilação diagnóstica; demonstrar pelo mapa/símbolos que o executável não pode chamar release/DMA/transação.
-- [ ] Gerar pacote diagnóstico local apenas após obter GUID real da ESP; build não faz staging, altera boot order ou reinicia.
-- [ ] Produzir tabela de três rotas: Intel GOP independente; NVIDIA único GOP/headless; combinação não reconhecida. Nenhuma é escolhida pela presença da Intel UHD no Windows.
+- [x] Primeiro reproduzir o comportamento atual: 25EC inventariado, sem leitura profunda autorizada. Testar contadores de zero escrita PCI/MMIO, DMA, FLR e detach.
+- [x] Separar inventário básico de leitura profunda. O primeiro pode coletar PCI/protocolos/GOP sem admitir a GPU à transação.
+- [x] Auditar a janela de leitura GA107 por fontes e limites antes de habilitar MMIO/PROM; leitura MMIO não é automaticamente inofensiva. Não deduzir endereço/limite só do nome Ampere.
+- [x] Cobrir no teste GPU duplicada, BAR inválido, energia desconhecida/D3, mudança de identidade, grafo incompleto e falha de gravação do log. Todos recusam a fase não comprovada.
+- [x] Preservar exclusão de código de unlock na compilação diagnóstica; demonstrar pelo mapa/símbolos que o executável não pode chamar release/DMA/transação.
+- [x] Gerar pacote diagnóstico local apenas após obter GUID real da ESP; build não faz staging, altera boot order ou reinicia.
+- [x] Produzir tabela de três rotas: Intel GOP independente; NVIDIA único GOP/headless; combinação não reconhecida. Nenhuma é escolhida pela presença da Intel UHD no Windows.
 
 **Aceite:** testes de observação passam e o probe se mantém não armável. Se leitura profunda não estiver fundamentada, o primeiro boot coleta somente inventário/topologia; um segundo build poderá ser necessário.
 
