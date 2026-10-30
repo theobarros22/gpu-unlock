@@ -16,7 +16,9 @@ static BOOLEAN OwnRecord(EFI_HANDLE Handle,const EFI_OPEN_PROTOCOL_INFORMATION_E
 #define GU_HEADLESS_MAX_DISPLAY_CHILDREN 4
 
 static EFI_GUID EdidGuid=EFI_EDID_DISCOVERED_PROTOCOL_GUID;
+#if GU_CONSOLE_CHILD_COUNT > 0
 static const EFI_GUID MouseFile={0xc7a7030c,0xc3d8,0x45ee,{0xbe,0xd9,0x5d,0x9e,0x76,0x76,0x29,0x53}};
+#endif
 typedef struct {
   EFI_SYSTEM_TABLE *Table;
   EFI_HANDLE Image,EdidAgent,NvAgent;
@@ -63,7 +65,11 @@ static EFI_STATUS ReadConfigFull(UINT32 *cfg) {
   s=io->GetLocation(io,&seg,&bus,&dev,&fun);
   if(s!=EFI_SUCCESS || seg!=GU_TARGET_SEGMENT || bus!=GU_TARGET_BUS || dev || fun)return EFI_UNSUPPORTED;
   s=io->Pci.Read(io,EfiPciIoWidthUint32,0,64,cfg);
+  #if GU_CONSOLE_CHILD_COUNT == 0
+  if(s==EFI_SUCCESS && (cfg[0]!=GU_BOARD_ID || cfg[11]!=GU_BOARD_SUBSYSTEM || cfg[2]!=0x030000a1 || cfg[4]!=(UINT32)GU_BAR0_BASE || ((cfg[1]&6U)!=2U && (cfg[1]&6U)!=6U)))s=EFI_UNSUPPORTED;
+#else
   if(s==EFI_SUCCESS && (cfg[0]!=GU_BOARD_ID || cfg[11]!=GU_BOARD_SUBSYSTEM || cfg[2]!=0x030000a1 || cfg[4]!=(UINT32)GU_BAR0_BASE || (cfg[1]&4)))s=EFI_UNSUPPORTED;
+#endif
   return s;
 }
 /* Shared descriptor policy for both pre-release reads and the later permit. */
@@ -150,7 +156,11 @@ EFI_STATUS GuPeekCold(EFI_SYSTEM_TABLE *t,UINT32 *values) {
   /* Require memory decode, no bus mastering and the exact 32-bit memory BAR
    * before asking for its descriptor, then recheck after allocation/free calls.
    * Firmware callbacks are not atomic; this guards service-return boundaries. */
+  #if GU_CONSOLE_CHILD_COUNT == 0
+  if(((targetConfig[1]&6U)!=2U && (targetConfig[1]&6U)!=6U) || targetConfig[4]!=(UINT32)GU_BAR0_BASE)return EFI_UNSUPPORTED;
+#else
   if((targetConfig[1]&6U)!=2U || targetConfig[4]!=(UINT32)GU_BAR0_BASE)return EFI_UNSUPPORTED;
+#endif
   s=PeekConfig(bs,targetHandle,target,targetConfig);
   if(s==EFI_SUCCESS)s=PeekBar(bs,target);
   if(s==EFI_SUCCESS)s=PeekConfig(bs,targetHandle,target,targetConfig);
@@ -166,13 +176,18 @@ static EFI_STATUS Prom(VOID) {
   if(!io || io!=PreparedPlan.RtxIo || !io->Mem.Read)s=EFI_UNSUPPORTED;
   UINT32 cfg[64];
   if(s==EFI_SUCCESS)s=ReadConfigFull(cfg);
+  #if GU_CONSOLE_CHILD_COUNT == 0
+  if(s==EFI_SUCCESS && (io!=PreparedPlan.RtxIo || ((cfg[1]&6U)!=2U && (cfg[1]&6U)!=6U) || !Bytes(cfg,Full.Config,sizeof(cfg))))s=EFI_NOT_READY;
+#else
   if(s==EFI_SUCCESS && (io!=PreparedPlan.RtxIo || (cfg[1]&6U)!=2U || !Bytes(cfg,Full.Config,sizeof(cfg))))s=EFI_NOT_READY;
+#endif
   for(UINTN at=0;s==EFI_SUCCESS && at<1048576;at+=65536)s=io->Mem.Read(io,EfiPciIoWidthUint8,0,0x300000+at,65536,data+at);
   if(s==EFI_SUCCESS && !GuHashMatches(data,1048576,GU_PROM_SHA256))s=EFI_CRC_ERROR;
   EFI_STATUS freed=bs->FreePool(data);
   if(s==EFI_SUCCESS)s=freed;
   return s;
 }
+#if GU_CONSOLE_CHILD_COUNT > 0
 static BOOLEAN CodeRange(UINTN base,UINT64 size,UINTN rva,UINTN bytes,UINTN stop) {
   return base && bytes && rva<=size && bytes<=size-rva &&
     stop>=rva && stop-rva<bytes && size<=~(UINTN)0-base;
@@ -208,6 +223,7 @@ static EFI_STATUS Profile(EFI_HANDLE agent,BOOLEAN mouse) {
   const char *hash=mouse?GU_EDID_TEXT_SHA256:GU_NVGOP_TEXT_SHA256;
   return GuHashMatches((UINT8 *)im->ImageBase+rva,bytes,hash)?EFI_SUCCESS:EFI_CRC_ERROR;
 }
+#endif
 static EFI_STATUS FullConsumers(const GRAPH *g) {
 #if defined(GU_HEADLESS_RESEARCH) && GU_CONSOLE_AGGREGATE
   UINTN owners=0,children=0,edid=0,combo=0;
@@ -318,6 +334,12 @@ static EFI_STATUS FullConsumers(const GRAPH *g) {
     }
     else return EFI_ACCESS_DENIED;
   }
+  #if GU_CONSOLE_CHILD_COUNT == 0
+  if(owners==0 && children==0) {
+    Full.ChildCount=0;
+    return EFI_SUCCESS;
+  }
+#endif
   if(owners!=1 || !children || Full.NvAgent==Full.Image)return EFI_ACCESS_DENIED;
   Full.ChildCount=children;
   UINTN consoleChild=children;
@@ -472,7 +494,10 @@ static EFI_STATUS AmdOnly(VOID) {
   EFI_HANDLE *handles=NULL;UINTN count=0;
   EFI_STATUS s=bs->LocateHandleBuffer(ByProtocol,&GopGuid,NULL,&count,&handles);
   if(s==EFI_NOT_FOUND && !count && !handles)return EFI_SUCCESS;
-#if GU_CONSOLE_AGGREGATE
+#if GU_CONSOLE_CHILD_COUNT == 0
+  if(handles)bs->FreePool(handles);
+  return EFI_SUCCESS;
+#elif GU_CONSOLE_AGGREGATE
   /* The aggregate console GOP may already be gone; zero or one pathless
      zero-FB GOP is the only tolerated survivor. */
   if(s!=EFI_SUCCESS || !handles || count>1){if(handles)bs->FreePool(handles);return EFI_UNSUPPORTED;}
@@ -539,8 +564,13 @@ static EFI_STATUS CapturePermit(VOID) {
   EFI_PCI_IO_PROTOCOL *io=PreparedPlan.RtxIo;
   if(s==EFI_SUCCESS && !io->Attributes)s=EFI_UNSUPPORTED;
   if(s==EFI_SUCCESS)s=io->Attributes(io,EfiPciIoAttributeOperationGet,0,&Full.Attributes);
+  #if GU_CONSOLE_CHILD_COUNT == 0
+  UINT64 expected=(Full.Config[1]&1?EFI_PCI_IO_ATTRIBUTE_IO:0)|(Full.Config[1]&2?EFI_PCI_IO_ATTRIBUTE_MEMORY:0)|(Full.Config[1]&4?EFI_PCI_IO_ATTRIBUTE_BUS_MASTER:0);
+  if(s==EFI_SUCCESS && Full.Attributes!=0 && (Full.Attributes&(EFI_PCI_IO_ATTRIBUTE_IO|EFI_PCI_IO_ATTRIBUTE_MEMORY|EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))!=expected)s=EFI_NOT_READY;
+#else
   UINT64 expected=(Full.Config[1]&1?EFI_PCI_IO_ATTRIBUTE_IO:0)|(Full.Config[1]&2?EFI_PCI_IO_ATTRIBUTE_MEMORY:0);
   if(s==EFI_SUCCESS && (Full.Attributes&(EFI_PCI_IO_ATTRIBUTE_IO|EFI_PCI_IO_ATTRIBUTE_MEMORY|EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))!=expected)s=EFI_NOT_READY;
+#endif
   if(s==EFI_SUCCESS)Full.Captured=TRUE;
   return s;
 }
@@ -618,9 +648,16 @@ EFI_STATUS GuReleaseGop(EFI_SYSTEM_TABLE *t,EFI_HANDLE image,GU_PREPARE_LOG log,
 #else
   if(s==EFI_SUCCESS)s=Note("ami-runtime-code-profile",Profile(Full.EdidAgent,TRUE));
 #endif
+#if GU_CONSOLE_CHILD_COUNT == 0
+  if(s==EFI_SUCCESS)s=Note("unattached-dgpu-no-gop-driver",EFI_SUCCESS);
+#else
   if(s==EFI_SUCCESS)s=Note("nvidia-code-profile",Profile(Full.NvAgent,FALSE));
+#endif
   if(s==EFI_SUCCESS)s=CapturePermit();
   s=Note("full-release-preflight",s);if(s!=EFI_SUCCESS)return s;
+#if GU_CONSOLE_CHILD_COUNT == 0
+  Full.Released=TRUE;
+#else
   /* Stage 3 stops the EDID driver on each display child; without one only stage 4 remains. */
   for(UINTN stage=GU_NO_EDID_DRIVER?4U:3U;stage<=4;stage++) {
 #ifdef GU_HEADLESS_RESEARCH
@@ -664,6 +701,7 @@ EFI_STATUS GuReleaseGop(EFI_SYSTEM_TABLE *t,EFI_HANDLE image,GU_PREPARE_LOG log,
     }
 #endif
   }
+#endif
   s=RestoreDecode();if(s!=EFI_SUCCESS)return s;
   s=GuVerifyReleased(t,TRUE);
   return Note("full-release-ready-for-original-unlock",s);
@@ -676,6 +714,14 @@ const GU_VERIFY_DIAGNOSTIC *GuLastVerifyDiagnostic(VOID) {return &VerifyDiagnost
  * other status bits, or any change before unlock. No register writes. */
 static BOOLEAN VerifyConfigWord(UINTN word,UINT32 expected,UINT32 observed,BOOLEAN checkCold) {
   if(expected==observed)return TRUE;
+#ifdef GU_PROFILE_DELL_G15_RESEARCH
+  /* Dell G15 firmware leaves BME enabled (command 0x0006) at cold boot.
+   * Post-unlock containment in GuRestorePci intentionally disables BME (command 0x0002).
+   * When verifying post-unlock state (!checkCold), accept word 1 with BME cleared. */
+  if(!checkCold && word==1 && (expected&~4U)==(observed&~4U) && !(observed&4U)) {
+    return TRUE;
+  }
+#endif
   const UINT32 clearable=0x00090000;
   if(checkCold || word!=0x80/4 || Full.Config[0x78/4]!=0x0012b410)return FALSE;
   return (expected & ~clearable)==(observed & ~clearable) &&

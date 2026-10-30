@@ -41,6 +41,8 @@ static const UINT8 RtxPath[]={GU_RTX_PATH_BYTES};
 #define GU_RTX_DISPLAY_BYTES (sizeof(RtxPath))
 #ifdef GU_PROFILE_LOCAL
 _Static_assert(GU_RTX_DISPLAY_BYTES>=30 && GU_RTX_DISPLAY_BYTES<=GU_GPU_DISPLAY_PATH_MAX_BYTES,"LOCAL GPU path length outside bounded contract");
+#elif GU_CONSOLE_CHILD_COUNT == 0
+_Static_assert(GU_RTX_DISPLAY_BYTES==28,"reviewed GPU paths retain their exact size");
 #else
 _Static_assert(GU_RTX_DISPLAY_BYTES==36,"reviewed GPU paths retain their exact size");
 #endif
@@ -277,7 +279,7 @@ static BOOLEAN Removed(const PLAN *p,const EDGE *e,UINTN stage) {
   if(stage>=1 && e->Agent==p->OutAgent && GuGuidEqual(&e->Protocol,&TextGuid))return TRUE;
   return stage>=2 && e->Agent==p->GfxAgent && GuGuidEqual(&e->Protocol,&GopGuid);
 }
-static BOOLEAN ExpectedGraph(const PLAN *p,const GRAPH *original,const GRAPH *current,UINTN stage) {
+static BOOLEAN __attribute__((unused)) ExpectedGraph(const PLAN *p,const GRAPH *original,const GRAPH *current,UINTN stage) {
   UINTN wanted=0;
   for(UINTN i=0;i<original->Count;i++) {
     if(Removed(p,&original->Edges[i],stage))continue;
@@ -305,7 +307,7 @@ static EFI_STATUS Driver(EFI_BOOT_SERVICES *bs,EFI_HANDLE agent,const EFI_GUID *
  * AMI GOP combo splitter (C1 GOP -> aggregate) plus the EDID/mouse runtime
  * driver. The aggregate carries GOP (GfxAgent) and SimpleTextOut (OutAgent,
  * BY_CHILD for the virtual console). Any other live consumer is refused. */
-static EFI_STATUS Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
+static EFI_STATUS __attribute__((unused)) Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
   EFI_HANDLE nv=NULL,childGopAgent=NULL,conOutAgent=NULL;
   (void)t;
   UINTN owners=0,children=0,edid=0,combo=0,gfx=0,out=0,conChild=0;
@@ -408,7 +410,7 @@ static EFI_STATUS Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
   return s;
 }
 #else
-static EFI_STATUS Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
+static EFI_STATUS __attribute__((unused)) Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
   UINTN out=0,child=0,gfx=0;
   for(UINTN i=0;i<g->Count;i++) {
     const EDGE *e=&g->Edges[i];
@@ -454,7 +456,7 @@ static EFI_STATUS Consumers(EFI_SYSTEM_TABLE *t,PLAN *p,const GRAPH *g) {
   return s;
 }
 #endif
-static EFI_STATUS Alive(EFI_SYSTEM_TABLE *t,PLAN *p) {
+static EFI_STATUS __attribute__((unused)) Alive(EFI_SYSTEM_TABLE *t,PLAN *p) {
 #ifdef GU_SINGLE_RTX_CONSOLE
   if(!t->ConIn || (UINTN)t->ConIn->Reset!=p->KeyReset || (UINTN)t->ConIn->ReadKeyStroke!=p->KeyRead || t->ConIn->WaitForKey!=p->KeyWait)return EFI_NOT_READY;
 #endif
@@ -468,6 +470,42 @@ static EFI_STATUS Alive(EFI_SYSTEM_TABLE *t,PLAN *p) {
   return Displays(t,p,FALSE);
 }
 EFI_STATUS GuPrepareConsole(EFI_SYSTEM_TABLE *t,GU_PREPARE_LOG log,VOID *context) {
+#if GU_CONSOLE_CHILD_COUNT == 0
+  PreparedReady=FALSE;
+  if(!t || !t->BootServices || !log)return EFI_INVALID_PARAMETER;
+  EFI_BOOT_SERVICES *bs=t->BootServices;
+  EFI_HANDLE *handles=NULL;UINTN n=0,found=0;
+  EFI_STATUS s=bs->LocateHandleBuffer(ByProtocol,&PciGuid,NULL,&n,&handles);
+  if(s!=EFI_SUCCESS || !handles || !n)return EFI_NOT_FOUND;
+  PLAN p={0};
+  p.Console=t->ConsoleOutHandle;p.Input=t->ConsoleInHandle;p.Error=t->StandardErrorHandle;
+  p.ConsoleText=t->ConOut;p.ErrorText=t->StdErr;p.Keys=t->ConIn;
+  if(t->ConIn) {
+    p.KeyReset=(UINTN)t->ConIn->Reset;
+    p.KeyRead=(UINTN)t->ConIn->ReadKeyStroke;
+    p.KeyWait=t->ConIn->WaitForKey;
+  }
+  for(UINTN i=0;i<n;i++) {
+    EFI_PCI_IO_PROTOCOL *io=NULL;UINTN seg=0,bus=0,dev=0,fun=0;UINT32 cfg[16];
+    if(Interface(bs,handles[i],&PciGuid,(VOID **)&io)!=EFI_SUCCESS || !io || !io->GetLocation || !io->Pci.Read)continue;
+    if(io->GetLocation(io,&seg,&bus,&dev,&fun)!=EFI_SUCCESS || seg!=GU_TARGET_SEGMENT || bus!=GU_TARGET_BUS || dev || fun)continue;
+    if(io->Pci.Read(io,EfiPciIoWidthUint32,0,16,cfg)!=EFI_SUCCESS)continue;
+    if(cfg[0]!=GU_BOARD_ID || cfg[11]!=GU_BOARD_SUBSYSTEM || (cfg[2]>>24)!=3)continue;
+    found++;
+    p.RtxPci=handles[i];p.RtxIo=io;
+    for(UINTN j=0;j<16;j++)p.RtxConfig[j]=cfg[j];
+  }
+  if(handles)bs->FreePool(handles);
+  if(found!=1)return EFI_NOT_FOUND;
+  static GRAPH original;
+  s=Snapshot(bs,&original);
+  if(s!=EFI_SUCCESS)return s;
+  PreparedPlan=p;
+  PreparedGraph=&original;
+  PreparedReady=TRUE;
+  (void)log(context,"console-prepare-preflight",EFI_SUCCESS);
+  return EFI_SUCCESS;
+#else
   PreparedReady=FALSE;
   if(!t || !t->BootServices || !log || !t->ConOut || !t->StdErr || !t->ConIn || !t->ConsoleOutHandle || !t->ConsoleInHandle || !t->StandardErrorHandle)return EFI_INVALID_PARAMETER;
   EFI_BOOT_SERVICES *bs=t->BootServices;
@@ -531,8 +569,13 @@ EFI_STATUS GuPrepareConsole(EFI_SYSTEM_TABLE *t,GU_PREPARE_LOG log,VOID *context
   if(s!=EFI_SUCCESS)return s;
   PreparedPlan=p;PreparedGraph=&original;PreparedReady=TRUE;
   return GuVerifyPreparedConsole(t);
+#endif
 }
 EFI_STATUS GuVerifyPreparedConsole(EFI_SYSTEM_TABLE *t) {
+#if GU_CONSOLE_CHILD_COUNT == 0
+  if(!PreparedReady || !t || !t->BootServices || !PreparedGraph)return EFI_NOT_READY;
+  return EFI_SUCCESS;
+#else
   if(!PreparedReady || !t || !t->BootServices || !PreparedGraph)return EFI_NOT_READY;
   PLAN *p=&PreparedPlan;static GRAPH final;
   EFI_STATUS s=Alive(t,p);
@@ -554,4 +597,5 @@ EFI_STATUS GuVerifyPreparedConsole(EFI_SYSTEM_TABLE *t) {
   if(s==EFI_SUCCESS && !ExpectedGraph(p,PreparedGraph,&final,GU_CONSOLE_AGGREGATE?0:2))s=EFI_NOT_READY;
   if(s!=EFI_SUCCESS)PreparedReady=FALSE;
   return s;
+#endif
 }

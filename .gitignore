@@ -62,4 +62,5 @@ windows/port/research/results/
 windows/port/research/headless/registration.local.json
 windows/port/research/headless/r2-registration.local.json
 windows/port/research/headless/headless-registration.local.json
+.venv/
 

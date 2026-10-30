@@ -6,9 +6,15 @@ Conforms to PLAN-DELL-G15-RTX3050 section 5 / W2 requirements.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import time
+
+# Fallback if external HF_HOME drive is disconnected
+hf_home = os.environ.get("HF_HOME")
+if hf_home and not os.path.exists(Path(hf_home).anchor):
+    os.environ["HF_HOME"] = str(Path.home() / ".cache" / "huggingface")
 
 try:
     from faster_whisper import WhisperModel

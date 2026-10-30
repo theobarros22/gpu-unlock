@@ -939,8 +939,16 @@ static int unlock_transaction_claim(struct unlock_transaction_work *work)
 		return GU_RESULT(-ENODEV);
 	work->original_cmd = command;
 	work->cmd_valid = true;
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
 	if (command & PCI_COMMAND_MASTER)
 		return GU_RESULT(-EBUSY);
+#else
+	if (command & PCI_COMMAND_MASTER) {
+		pci_clear_master(work->pdev);
+		if (diag_pci_word(work, false, PCI_COMMAND, &command) || (command & PCI_COMMAND_MASTER))
+			return GU_RESULT(-EBUSY);
+	}
+#endif
 	dev_info(&work->pdev->dev, "claim: command=%#x capability=%#x BAR_mask=%#x\n",
 		command, cap, pci_select_bars(work->pdev, IORESOURCE_MEM));
 	/* Only BAR0 is mapped. On the display card the firmware framebuffer keeps

@@ -9,7 +9,7 @@ param(
  [switch]$HeadlessResearch,
  [switch]$UsbMedia,
  [ValidateSet('original03100062','observed03000062','entryLatchedSs1Preserve','entryLatchedSs1Full')][string]$StockProfile,
- [ValidateSet('b650m-3090fe','b660m-3070ti','b660m-3090ti','x870-3090ti','b660plus-3060','h610m-3060','local')][string]$HardwareProfile='b650m-3090fe'
+ [ValidateSet('b650m-3090fe','b660m-3070ti','b660m-3090ti','x870-3090ti','b660plus-3060','h610m-3060','local','dell-g15-3050')][string]$HardwareProfile='b650m-3090fe'
 )
 # Reviewed single-machine profiles; mirrors internal-boot/unlock/machine-profile.h.
 # A profile is fixed provenance: it selects constants compiled into the EFI,
@@ -22,6 +22,7 @@ $hwTable=@{
  'h610m-3060'=[ordered]@{Define='-DGU_PROFILE_H610M_3060';Name='GIGABYTE-H610M-H-FC-RTX3060-12GB';TargetPci='250410de';Subsystem='40961458';Chip='0xb76000a1';Prom='727dd8332f028783d3de2f81a707e4d9448c3238db6180271f3a8e9c03a808c9';Memory='0x3000';HeadlessOnly=$true;UsbOnly=$true}
  'x870-3090ti'=[ordered]@{Define='-DGU_PROFILE_X870_3090TI';Name='GIGABYTE-X870-AORUS-ELITE-WIFI7-F13d-RTX3090TI';TargetPci='220310de';Subsystem='88701043';Chip='0xb72000a1';Prom='943565975885ee71a7e861265984c785f564f35272c32395ee7410b353d9bbc4';Memory='0x5ff4';HeadlessOnly=$true}
  'b660plus-3060'=[ordered]@{Define='-DGU_PROFILE_B660PLUS_3060';Name='ASUS-PRIME-B660-PLUS-D4-3010-RTX3060';TargetPci='248710de';Subsystem='153010de';Chip='0xb74000a1';Prom='7cc9018e80c63e4aec79c71cd4ed6bdeb5e147aeeb22b21b96efe90887ba8806';Memory='0x3000';HeadlessOnly=$true;UsbOnly=$true}
+ 'dell-g15-3050'=[ordered]@{Define='-DGU_PROFILE_DELL_G15_RESEARCH';Name='DELL-G15-5530-RTX3050-6GB-GA107';TargetPci='25ec10de';Subsystem='0bf81028';Chip='0xb77000a1';Prom='e8f866920f803f61d67d805ff15ea46b1046c18c588def0f962fdcd8e937057c';Memory='0x1800';HeadlessOnly=$true;UsbOnly=$true}
 }
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'local-profile.ps1')

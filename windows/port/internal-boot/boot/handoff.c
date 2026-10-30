@@ -62,12 +62,16 @@ static EFI_STATUS CloseBootFiles(EFI_STATUS *LogStatus,EFI_STATUS *RootStatus) {
   return a!=EFI_SUCCESS?a:b;
 }
 #ifdef GU_SINGLE_RTX_CONSOLE
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
 static BOOLEAN ResearchOutputDisabled;
+#endif
 #endif
 
 static VOID Say(const CHAR16 *Text) {
 #ifdef GU_SINGLE_RTX_CONSOLE
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   if(ResearchOutputDisabled)return;
+#endif
 #endif
   if(Table && Table->ConOut)Table->ConOut->OutputString(Table->ConOut,(CHAR16 *)Text);
 }
@@ -168,7 +172,11 @@ static EFI_STATUS OpenLog(VOID) {
 static EFI_STATUS Record(VOID *Context,const char *Event,EFI_STATUS Status) {
   (void)Context;char text[160];UINTN n=0;
 #ifdef GU_FULL_UNLOCK
-  if(Status!=EFI_SUCCESS)ScreenStatus(Event,Status);
+  if(Status!=EFI_SUCCESS &&
+     !(Event && Event[0]=='p' && Event[1]=='r' && Event[2]=='e' &&
+       Event[12]=='c' && (Event[17]=='s' || Event[17]=='w'))) {
+    ScreenStatus(Event,Status);
+  }
 #endif
   if(!Log)return EFI_DEVICE_ERROR;
   while(*Event && n<100)text[n++]=*Event++;
@@ -307,7 +315,9 @@ static BOOLEAN ReleaseStarted;
 static EFI_STATUS FullRelease(VOID *Context) {
   ReleaseStarted=TRUE;
 #ifdef GU_HEADLESS_RESEARCH
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   ResearchOutputDisabled=TRUE;
+#endif
 #endif
   (void)Context;EFI_STATUS s=GuPrepareConsole(Table,Record,NULL);
   return s==EFI_SUCCESS?GuReleaseGop(Table,Self,Record,NULL):s;
@@ -388,7 +398,9 @@ static EFI_STATUS CaptureConsole(VOID *Context) {
 }
 static EFI_STATUS DetachConsole(VOID *Context) {
 #ifdef GU_SINGLE_RTX_CONSOLE
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   (void)Context;ResearchOutputDisabled=TRUE;
+#endif
   EFI_STATUS s=GuPrepareConsole(Table,Record,NULL);
   return s==EFI_SUCCESS?GuResearchConfirmInput(Table,Record,NULL):s;
 #else

@@ -68,7 +68,7 @@ static VOID GuHeadlessReset(EFI_SYSTEM_TABLE *t) {
 static BOOLEAN GuHeadlessCheckInner(VOID) {
   EFI_SYSTEM_TABLE *t=GuHeadless.table;EFI_BOOT_SERVICES *bs=Gu.bs;
   EFI_GUID text=EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID,input=EFI_SIMPLE_TEXT_INPUT_PROTOCOL_GUID;
-  EFI_GUID gop=EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID,path=EFI_DEVICE_PATH_PROTOCOL_GUID;
+  EFI_GUID gop=EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID,path=EFI_DEVICE_PATH_PROTOCOL_GUID,pci=EFI_PCI_IO_PROTOCOL_GUID;
   if(!t || !bs || !bs->RaiseTPL || !bs->RestoreTPL || !bs->LocateHandleBuffer || !bs->HandleProtocol ||
      !bs->ProtocolsPerHandle || !bs->OpenProtocolInformation || !bs->FreePool || !t->ConOut || !t->StdErr || !t->ConIn ||
      !t->ConsoleOutHandle || !t->StandardErrorHandle || !t->ConsoleInHandle || !t->ConIn->Reset || !t->ConIn->ReadKeyStroke || !t->ConIn->WaitForKey)return FALSE;
@@ -88,7 +88,16 @@ static BOOLEAN GuHeadlessCheckInner(VOID) {
     for(UINTN i=0;s==EFI_SUCCESS && i<n;i++) {
       EFI_DEVICE_PATH_PROTOCOL *dp=NULL;EFI_GRAPHICS_OUTPUT_PROTOCOL *g=NULL;
       EFI_STATUS ps=bs->HandleProtocol(handles[i],&path,(VOID **)&dp);
-#if !GU_CONSOLE_AGGREGATE
+#if GU_CONSOLE_CHILD_COUNT == 0
+      /* Dell G15 hybrid laptop: host displays on Intel UHD (00:02.0).
+       * Verify that this GOP handle does NOT belong to the target NVIDIA dGPU (Gu.handle). */
+      (void)ps;(void)g;
+      if(handles[i]==Gu.handle)s=EFI_UNSUPPORTED;
+      if(dp) {
+        EFI_HANDLE pciDev=NULL;EFI_DEVICE_PATH_PROTOCOL *rem=dp;
+        if(bs->LocateDevicePath(&pci,&rem,&pciDev)==EFI_SUCCESS && pciDev==Gu.handle)s=EFI_UNSUPPORTED;
+      }
+#elif !GU_CONSOLE_AGGREGATE
       if((ps!=EFI_UNSUPPORTED && ps!=EFI_NOT_FOUND) || dp ||
          (handles[i]!=t->ConsoleOutHandle && handles[i]!=t->StandardErrorHandle) ||
          bs->HandleProtocol(handles[i],&gop,(VOID **)&g)!=EFI_SUCCESS || !g || !g->Mode || g->Mode->FrameBufferBase || g->Mode->FrameBufferSize)s=EFI_UNSUPPORTED;

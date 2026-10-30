@@ -18,10 +18,10 @@
 #error GPU family and firmware must be derived from the selected machine profile
 #endif
 
-#if (defined(GU_PROFILE_B650M_3090FE) + defined(GU_PROFILE_B660M_3070TI) + defined(GU_PROFILE_B660M_3090TI) + defined(GU_PROFILE_X870_3090TI) + defined(GU_PROFILE_B660PLUS_3060) + defined(GU_PROFILE_LOCAL) + defined(GU_PROFILE_H610M_3060) + defined(GU_PROFILE_PROBE_H610M_3060)) > 1
+#if (defined(GU_PROFILE_B650M_3090FE) + defined(GU_PROFILE_B660M_3070TI) + defined(GU_PROFILE_B660M_3090TI) + defined(GU_PROFILE_X870_3090TI) + defined(GU_PROFILE_B660PLUS_3060) + defined(GU_PROFILE_LOCAL) + defined(GU_PROFILE_H610M_3060) + defined(GU_PROFILE_PROBE_H610M_3060) + defined(GU_PROFILE_DELL_G15_RESEARCH)) > 1
 #error Select exactly one machine profile
 #endif
-#if !defined(GU_PROFILE_B650M_3090FE) && !defined(GU_PROFILE_B660M_3070TI) && !defined(GU_PROFILE_B660M_3090TI) && !defined(GU_PROFILE_X870_3090TI) && !defined(GU_PROFILE_B660PLUS_3060) && !defined(GU_PROFILE_LOCAL) && !defined(GU_PROFILE_H610M_3060) && !defined(GU_PROFILE_PROBE_H610M_3060)
+#if !defined(GU_PROFILE_B650M_3090FE) && !defined(GU_PROFILE_B660M_3070TI) && !defined(GU_PROFILE_B660M_3090TI) && !defined(GU_PROFILE_X870_3090TI) && !defined(GU_PROFILE_B660PLUS_3060) && !defined(GU_PROFILE_LOCAL) && !defined(GU_PROFILE_H610M_3060) && !defined(GU_PROFILE_PROBE_H610M_3060) && !defined(GU_PROFILE_DELL_G15_RESEARCH)
 #define GU_PROFILE_B650M_3090FE 1
 #endif
 
@@ -218,6 +218,20 @@
   2,1,12,0,0xd0,0x41,3,10,0,0,0,0,1,1,6,0,0,1,1,1,6,0,0,0,2,3,8,0,0,3,1,128,127,255,4,0
 #define GU_FIRMWARE_PROFILE GU_FIRMWARE_AMI_B660M_4003
 
+#elif defined(GU_PROFILE_DELL_G15_RESEARCH)
+
+/* Dell G15 5530 BIOS 1.34.0, i5-13450HX (Intel UHD Graphics owns the console),
+ * NVIDIA RTX 3050 Laptop 6GB (GA107, 10de:25ec, subsystem 1028:0bf8):
+ * Hardware evidence pinned in captures dell-g15-5530-capture-1/2.
+ * Rota 1 (pure headless dGPU; display is on Intel UHD). */
+#include "profile-dell-research.h"
+
+#define GU_ROOT_PORT_DEVICE 1U
+#define GU_ROOT_PORT_FUNCTION 0U
+/* 28-byte endpoint device path: ACPI root, Pci(1,0), Pci(0,0). */
+#define GU_RTX_PATH_BYTES \
+  2,1,12,0,0xd0,0x41,3,10,0,0,0,0,1,1,6,0,0,1,1,1,6,0,0,0,127,255,4,0
+
 #else
 
 /* ASUSTeK TUF GAMING B650M-PLUS WIFI BIOS 3057, Ryzen (Raphael iGPU
@@ -244,7 +258,7 @@
  * probes deliberately receive neither chip traits nor firmware defaults. */
 #if !defined(GU_PROFILE_PROBE_H610M_3060)
 #include "gpu-family.h"
-#if !defined(GU_PROFILE_LOCAL)
+#if !defined(GU_PROFILE_LOCAL) && !defined(GU_PROFILE_DELL_G15_RESEARCH)
 #include "firmware-profile.h"
 #endif
 #endif
@@ -285,7 +299,7 @@
 #if GU_NO_EDID_DRIVER != 0 && GU_NO_EDID_DRIVER != 1
 #error GU_NO_EDID_DRIVER must be 0 or 1
 #endif
-#if GU_NO_EDID_DRIVER && !defined(GU_PROFILE_LOCAL)
+#if GU_NO_EDID_DRIVER && !defined(GU_PROFILE_LOCAL) && !defined(GU_PROFILE_DELL_G15_RESEARCH)
 #error A firmware without an EDID driver is only for a generated local profile
 #endif
 #if GU_NO_EDID_DRIVER && GU_CONSOLE_AGGREGATE

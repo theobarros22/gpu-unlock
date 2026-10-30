@@ -173,13 +173,22 @@ EFI_STATUS GuEnableMaster(VOID) {
   Status=RawRead(EfiPciIoWidthUint32,0,&Id);
   if(EFI_ERROR(Status) || Id!=GU_BOARD_ID)goto fail;
   Status=RawRead(EfiPciIoWidthUint16,4,&Command);
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   if(EFI_ERROR(Status) || Command==0xffff || (Command&4) || !(Command&2))goto fail;
+#else
+  if(EFI_ERROR(Status) || Command==0xffff || !(Command&2))goto fail;
+#endif
   Status=Gu.pci->Attributes(Gu.pci,EfiPciIoAttributeOperationSupported,0,&Supported);
   if(EFI_ERROR(Status) || !(Supported&EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))goto fail;
   Status=Gu.pci->Attributes(Gu.pci,EfiPciIoAttributeOperationGet,0,&Before);
   Decode=(Command&1?EFI_PCI_IO_ATTRIBUTE_IO:0)|(Command&2?EFI_PCI_IO_ATTRIBUTE_MEMORY:0);
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   if(EFI_ERROR(Status) || (Before&EFI_PCI_IO_ATTRIBUTE_BUS_MASTER) ||
      (Before&(EFI_PCI_IO_ATTRIBUTE_IO|EFI_PCI_IO_ATTRIBUTE_MEMORY))!=Decode)goto fail;
+#else
+  if(EFI_ERROR(Status) ||
+     (Before!=0 && (Before&(EFI_PCI_IO_ATTRIBUTE_IO|EFI_PCI_IO_ATTRIBUTE_MEMORY))!=Decode))goto fail;
+#endif
   GuLog("Bus Master enable intent: command=%#x attributes=%#llx\n",
     Command,(unsigned long long)Before);
   if(Gu.fault){Status=EFI_DEVICE_ERROR;goto fail;}
@@ -196,7 +205,11 @@ EFI_STATUS GuEnableMaster(VOID) {
   Status=Gu.pci->Attributes(Gu.pci,EfiPciIoAttributeOperationEnable,EFI_PCI_IO_ATTRIBUTE_BUS_MASTER,NULL);
   if(EFI_ERROR(Status))goto fail;
   Status=Gu.pci->Attributes(Gu.pci,EfiPciIoAttributeOperationGet,0,&After);
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
   if(EFI_ERROR(Status) || After!=(Before|EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))goto fail;
+#else
+  if(EFI_ERROR(Status) || !(After&EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))goto fail;
+#endif
   Status=RawRead(EfiPciIoWidthUint16,4,&Now);
   if(EFI_ERROR(Status) || Now!=(UINT16)(Command|4))goto fail;
   GuLog("Bus Master enabled: command=%#x attributes=%#llx matched=1\n",
@@ -225,8 +238,13 @@ EFI_STATUS GuClearMaster(VOID) {
         EFI_PCI_IO_ATTRIBUTE_BUS_MASTER,NULL);
       EFI_STATUS ReadStatus=Gu.pci->Attributes(Gu.pci,EfiPciIoAttributeOperationGet,0,&Attributes);
       if(!EFI_ERROR(AttributeStatus) && EFI_ERROR(ReadStatus))AttributeStatus=ReadStatus;
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
       if(!EFI_ERROR(AttributeStatus) && Attributes!=Gu.master_original_attributes)
         AttributeStatus=EFI_DEVICE_ERROR;
+#else
+      if(!EFI_ERROR(AttributeStatus) && (Attributes&EFI_PCI_IO_ATTRIBUTE_BUS_MASTER))
+        AttributeStatus=EFI_DEVICE_ERROR;
+#endif
     }
     Gu.master_last_attributes=Attributes;
     if(EFI_ERROR(AttributeStatus) && !EFI_ERROR(Gu.master_attribute_status))
@@ -267,7 +285,12 @@ EFI_STATUS GuSavePci(VOID) {
   for(I=0;I<64;I++)
     if(EFI_ERROR(GuConfigRead(EfiPciIoWidthUint32,(UINT32)I*4,&Gu.saved_config[I])))return EFI_DEVICE_ERROR;
   if(Gu.saved_config[0]!=GU_BOARD_ID || Gu.saved_config[11]!=GU_BOARD_SUBSYSTEM ||
-     (Gu.saved_config[1]&4))return EFI_ACCESS_DENIED;
+#ifndef GU_PROFILE_DELL_G15_RESEARCH
+     (Gu.saved_config[1]&4)
+#else
+     (((Gu.saved_config[1]&6)!=2) && ((Gu.saved_config[1]&6)!=6))
+#endif
+     )return EFI_ACCESS_DENIED;
   if(EFI_ERROR(GuConfigRead(EfiPciIoWidthUint16,Gu.pcie_cap+8,&Gu.saved_devctl)))return EFI_DEVICE_ERROR;
   if(Gu.saved_devctl&0x8000)return EFI_NOT_READY;
   if(Gu.pcie_version>=2 && EFI_ERROR(GuConfigRead(EfiPciIoWidthUint16,
