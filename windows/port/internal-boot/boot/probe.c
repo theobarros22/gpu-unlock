@@ -164,15 +164,17 @@ static VOID DumpProm(CAPTURE *c,EFI_FILE_PROTOCOL *root,UINT8 *page) {
 static BOOLEAN ProbeEnvelope(CAPTURE *c,EFI_PCI_IO_PROTOCOL *io,const UINT32 *cfg) {
 #ifdef GU_PROBE_GENERIC
   BOOLEAN identity=cfg[0]==0x220410deU || cfg[0]==0x220310deU ||
-    cfg[0]==0x248710deU || cfg[0]==0x250410deU || cfg[0]==0x248410deU || cfg[0]==0x24c910deU;
+    cfg[0]==0x248710deU || cfg[0]==0x250410deU || cfg[0]==0x248410deU || cfg[0]==0x24c910deU ||
+    cfg[0]==0x25ec10deU;
 #else
   BOOLEAN identity=cfg[0]==GU_BOARD_ID && cfg[11]==GU_BOARD_SUBSYSTEM;
 #ifdef GU_BAR0_BASE
   if(cfg[4]!=(UINT32)GU_BAR0_BASE)identity=FALSE;
 #endif
 #endif
+  BOOLEAN validCommand = (cfg[0] == 0x25ec10deU) ? ((cfg[1]&6U)==2U || (cfg[1]&6U)==6U) : ((cfg[1]&6U)==2U);
   if(!identity || cfg[2]!=0x030000a1U ||
-     (cfg[1]&6U)!=2U || !cfg[4] || (cfg[4]&0xffffffU) || !io->GetBarAttributes || !io->Mem.Read)return FALSE;
+     !validCommand || !cfg[4] || (cfg[4]&0xffffffU) || !io->GetBarAttributes || !io->Mem.Read)return FALSE;
   VOID *raw=NULL;
   EFI_STATUS s=io->GetBarAttributes(io,0,NULL,&raw);
   BOOLEAN good=FALSE;

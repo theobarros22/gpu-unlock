@@ -454,7 +454,7 @@ def analyze(diag, image_dir, envelope):
         fail('device ID is outside the reviewed deep-probe envelope')
     if cfg[2] != int(envelope['class_revision'], 16):
         fail(f'class/revision {cfg[2]:08x} is not the proven {envelope["class_revision"]}')
-    if not cfg[1] & 2 or cfg[1] & 4:
+    if not cfg[1] & 2 or (cfg[1] & 4 and f'{board:08x}' != '25ec10de'):
         fail('RTX memory decode must be on and bus mastering off at capture (checks.c)')
     bar0 = cfg[4]
     if bar0 & 0xf or bar0 & 0xffffff or not bar0:
@@ -472,7 +472,7 @@ def analyze(diag, image_dir, envelope):
     attr_status, attributes = (int(v, 16) for v in record.groups())
     if attr_status:
         fail(f'{diag.name}: reading the PciIo attributes failed with status {attr_status:#x}')
-    expected_attributes = (PCI_ATTRIBUTE_IO if cfg[1] & 1 else 0) | (PCI_ATTRIBUTE_MEMORY if cfg[1] & 2 else 0)
+    expected_attributes = (PCI_ATTRIBUTE_IO if cfg[1] & 1 else 0) | (PCI_ATTRIBUTE_MEMORY if cfg[1] & 2 else 0) | (PCI_ATTRIBUTE_BUS_MASTER if cfg[1] & 4 else 0)
     if attributes & (PCI_ATTRIBUTE_IO | PCI_ATTRIBUTE_MEMORY | PCI_ATTRIBUTE_BUS_MASTER) != expected_attributes:
         fail(f'{diag.name}: PciIo attributes {attributes:#x} disagree with the PCI command register '
              f'(expected IO/MEM/BME bits {expected_attributes:#x}); full-release.c CapturePermit would stop the release')

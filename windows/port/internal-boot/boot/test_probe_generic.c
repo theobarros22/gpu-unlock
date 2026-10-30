@@ -233,12 +233,16 @@ int main(void) {
     Check(!S.RegReads && !S.PromReads,"bad inventory permits no deep reads");
     Check(!Logged("capture-complete=1"),"bad inventory cannot claim a complete capture");
   }
-  const UINT32 reviewedIds[]={0x220310deU,0x248710deU,0x250410deU,0x248410deU,0x24c910deU};
+  const UINT32 reviewedIds[]={0x220310deU,0x248710deU,0x250410deU,0x248410deU,0x24c910deU,0x25ec10deU};
   for(UINTN i=0;i<sizeof(reviewedIds)/sizeof(reviewedIds[0]);i++) {
     GenericSetup(G_OK);TestId=reviewedIds[i];
     Check(GuCaptureGraphOnVolume(&Table,&LogFile,&RootFile)==EFI_SUCCESS,"reviewed GA10x capture identity succeeds");
     Check(S.RegReads==16 && S.PromReads==PROM_DWORDS,"each reviewed identity retains bounded deep reads");
   }
+  /* Dell G15 laptop hybrid graphics: dGPU boots with BME enabled */
+  GenericSetup(G_BME);TestId=0x25ec10deU;
+  Check(GuCaptureGraphOnVolume(&Table,&LogFile,&RootFile)==EFI_SUCCESS,"laptop GA107 with BME enabled succeeds");
+  Check(S.RegReads==16 && S.PromReads==PROM_DWORDS,"laptop GA107 retains bounded deep reads");
   const UINTN segments[]={1,0xffffU};
   for(UINTN i=0;i<sizeof(segments)/sizeof(segments[0]);i++) {
     GenericSetup(G_OK);TestSegment=segments[i];

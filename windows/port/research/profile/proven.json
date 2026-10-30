@@ -1,7 +1,7 @@
 {
   "_comment": "Hardware-proven envelope for generated local profiles. make-profile.py refuses any capture outside it. Widen an entry only in a reviewed change that cites new hardware evidence (docs/NEW-MACHINE.en.md).",
   "class_revision": "030000a1",
-  "probe_device_ids": ["220410de", "220310de", "248710de", "250410de", "248410de", "24c910de"],
+  "probe_device_ids": ["220410de", "220310de", "248710de", "250410de", "248410de", "24c910de", "25ec10de"],
   "chips": [
     {
       "chip": "b72000a1",
@@ -45,9 +45,22 @@
       "pci_memory": {"250410de": ["3000"]},
       "nvgop": [{"version": "60010", "text_sha256": "615b37a708b1894e18d7fa60cfcdacaa4d8b598863a10b8103d231a595847b2b"}],
       "evidence": ["evidence/h610m-3060-usb"]
+    },
+    {
+      "chip": "b77000a1",
+      "family": "GA107",
+      "memory": ["1800"],
+      "pci_memory": {"25ec10de": ["1800"]},
+      "nvgop": [{"version": "6001a", "text_sha256": "d622c6f68201bf0d79658a844b032e2ecadab7e457e9cd608c16ceadc74cb13b"}],
+      "evidence": ["evidence/dell-g15-5530-capture-1"]
     }
   ],
   "nvgop": [
+    {
+      "version": "6001a",
+      "text_sha256": "d622c6f68201bf0d79658a844b032e2ecadab7e457e9cd608c16ceadc74cb13b",
+      "evidence": "evidence/dell-g15-5530-capture-1"
+    },
     {
       "version": "60015",
       "text_sha256": "645a2f416940211e09023838ac03f4b45453f95f457eab2de49628d57e9deb95",
