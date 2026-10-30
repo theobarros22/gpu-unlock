@@ -15,6 +15,10 @@ static char *targets;
 module_param(targets, charp, 0444);
 MODULE_PARM_DESC(targets, "\"all\" or comma-separated PCI addresses of supported Ampere cards to unlock");
 
+static bool experimental_ga107;
+module_param(experimental_ga107, bool, 0444);
+MODULE_PARM_DESC(experimental_ga107, "Allow experimental Dell G15 5530 RTX 3050 GA107 (default: off)");
+
 static bool resume = true;
 module_param(resume, bool, 0644);
 MODULE_PARM_DESC(resume, "Unlock the cards again after resume from suspend, which powers them off (default: on)");
@@ -38,7 +42,9 @@ static struct pci_dev *next_supported(struct pci_dev *from, const struct gu_card
 	struct pci_dev *pdev = from;
 
 	while ((pdev = pci_get_device(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID, pdev)))
-		if ((*recipe = gu_card_find(pdev->device)))
+		if (gu_card_allowed(pdev->device, pdev->subsystem_vendor,
+				    pdev->subsystem_device, experimental_ga107) &&
+		    (*recipe = gu_card_find(pdev->device)))
 			return pdev;
 	return NULL;
 }

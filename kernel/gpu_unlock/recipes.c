@@ -331,7 +331,7 @@ static const struct gu_family ga100 = {
 	.feat_ss1 = GU_FEAT_SS1_OFFSET,
 };
 static const struct gu_family ga10x = {
-	.name = "GA102/GA103/GA104/GA106",
+	.name = "GA102/GA103/GA104/GA106/GA107",
 	.privileged = GU_WRITE_TABLE(ga10x_plm),
 	.host = GU_WRITE_TABLE(selectors),
 	.fw = &ga10x_fw,
@@ -383,6 +383,7 @@ static const struct gu_family tu102 = {
 #define GA103(id) { id, 0x173, &ga10x }
 #define GA104(id) { id, 0x174, &ga10x }
 #define GA106(id) { id, 0x176, &ga10x }
+#define GA107(id) { id, 0x177, &ga10x }
 
 static const struct gu_card cards[] = {
 	/* TU102: RTX 2080 Ti, Titan RTX */
@@ -432,6 +433,9 @@ static const struct gu_card cards[] = {
 	GA106(0x2501), GA106(0x2503), GA106(0x2504), GA106(0x2505),
 	GA106(0x2507), GA106(0x2508), GA106(0x2509), GA106(0x252f),
 	GA106(0x2544),
+
+	/* RTX 3050 6GB Laptop, reported on Dell G15 5530 (experimental). */
+	GA107(0x25ec),
 };
 
 const struct gu_card *gu_card_find(u16 device)
@@ -441,4 +445,11 @@ const struct gu_card *gu_card_find(u16 device)
 		if (cards[i].device == device)
 			return &cards[i];
 	return NULL;
+}
+
+bool gu_card_allowed(u16 device, u16 subvendor, u16 subdevice, bool experimental)
+{
+	if (device != 0x25ec)
+		return true;
+	return experimental && subvendor == 0x1028 && subdevice == 0x0bf8;
 }

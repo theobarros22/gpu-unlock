@@ -16,6 +16,12 @@ concurrency:
 # The pinned NVIDIA inputs are fetched once per change of the list in
 # fetch_artifacts.py into .inputs and shared by every job through the cache.
 jobs:
+  recipe-selection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - run: cc -std=c11 tests/recipes_test.c kernel/gpu_unlock/recipes.c -o /tmp/recipes-test && /tmp/recipes-test
+
   inputs:
     runs-on: ubuntu-24.04
     steps:
